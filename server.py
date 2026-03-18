@@ -12,7 +12,9 @@ def generate_key(machine_id, expiry):
     raw = f"{machine_id}|{expiry}|{SECRET}"
     hash_part = hashlib.sha256(raw.encode()).hexdigest()[:16].upper()
 
-    return f"{machine_id[:4]}-{expiry.replace('-', '')[:6]}-{hash_part}"
+    key = f"{machine_id[:4]}-{expiry.replace('-', '')[:6]}-{hash_part}"
+    return key
+
 
 
 @app.route("/activate", methods=["POST"])
@@ -23,24 +25,23 @@ def activate():
     key = data.get("key", "").strip()
     machine_id = data.get("machine", "").strip().upper()
 
-    parts = key.split("-")
-    if len(parts) != 3:
+    if not key or not machine_id:
         return jsonify({"status": "error"})
 
-    expiry_part = parts[1]
+    parts = key.split("-")
+    if len(parts) != 2:
+        return jsonify({"status": "error"})
+
+    expiry_part, hash_part = parts
 
     year = expiry_part[:4]
     month = expiry_part[4:6]
     expiry = f"{year}-{month}-01"
 
-    expected = generate_key(machine_id, expiry)
+    raw = f"{machine_id}|{expiry}|{SECRET}"
+    expected_hash = hashlib.sha256(raw.encode()).hexdigest()[:16].upper()
 
-    if key == expected:
+    if hash_part == expected_hash:
         return jsonify({"status": "success", "expiry": expiry})
 
     return jsonify({"status": "error"})
-
-
-@app.route("/")
-def home():
-    return "SERVER LIVE 🔥"

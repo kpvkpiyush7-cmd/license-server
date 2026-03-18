@@ -38,27 +38,26 @@ def activate():
     key = data.get("key")
     machine_id = data.get("machine")
 
-    # expiry decode nahi — tum keygen se control karoge
-    expiries = [
-        "2026-04-10",
-        "2027-03-10",
-        "2099-12-31"
-    ]
+    try:
+        # key split karo
+        parts = key.split("-")
 
-    for exp in expiries:
-        if verify_key(key, machine_id, exp):
-            return jsonify({
-                "status": "success",
-                "expiry": exp
-            })
+        if len(parts) != 3:
+            return jsonify({"status": "error"})
+
+        expiry_part = parts[1]
+
+        # expiry decode
+        expiry = f"20{expiry_part[:2]}-{expiry_part[2:4]}-{expiry_part[4:6]}"
+
+    except:
+        return jsonify({"status": "error"})
+
+    # verify
+    if verify_key(key, machine_id, expiry):
+        return jsonify({
+            "status": "success",
+            "expiry": expiry
+        })
 
     return jsonify({"status": "error"})
-
-
-# =========================
-# RUN
-# =========================
-import os
-port = int(os.environ.get("PORT", 5000))
-
-app.run(host="0.0.0.0", port=port)

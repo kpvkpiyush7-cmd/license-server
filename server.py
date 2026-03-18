@@ -8,9 +8,11 @@ SECRET = "GST_SECURE_2026_ULTRA"
 
 
 # =========================
-# GENERATE KEY (SAME AS SOFTWARE)
+# GENERATE KEY (MASTER LOGIC)
 # =========================
 def generate_key(machine_id, expiry):
+
+    machine_id = machine_id.upper()
 
     raw = f"{machine_id}|{expiry}|{SECRET}"
     hash_part = hashlib.sha256(raw.encode()).hexdigest()[:16].upper()
@@ -24,7 +26,12 @@ def generate_key(machine_id, expiry):
 # =========================
 def verify_key(key, machine_id, expiry):
 
+    machine_id = machine_id.upper()
     expected = generate_key(machine_id, expiry)
+
+    print("EXPECTED:", expected)
+    print("GIVEN:", key)
+
     return key == expected
 
 
@@ -44,13 +51,18 @@ def activate():
             return jsonify({"status": "error"})
 
         parts = key.split("-")
-
         if len(parts) != 3:
             return jsonify({"status": "error"})
 
         expiry_part = parts[1]
 
-        expiry = f"20{expiry_part[:2]}-{expiry_part[2:4]}-{expiry_part[4:6]}"
+        # ✅ FIXED EXPIRY (IMPORTANT)
+        year = expiry_part[:4]
+        month = expiry_part[4:6]
+        expiry = f"{year}-{month}-01"
+
+        print("MACHINE:", machine_id)
+        print("EXPIRY:", expiry)
 
         if verify_key(key, machine_id, expiry):
             return jsonify({
@@ -65,7 +77,7 @@ def activate():
 
 
 # =========================
-# HOME CHECK
+# HOME
 # =========================
 @app.route("/")
 def home():

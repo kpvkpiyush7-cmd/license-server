@@ -1,15 +1,10 @@
 from flask import Flask, request, jsonify
 import hashlib
-import os
 
 app = Flask(__name__)
 
 SECRET = "GST_SECURE_2026_ULTRA"
 
-
-# =========================
-# GENERATE KEY (MASTER LOGIC)
-# =========================
 def generate_key(machine_id, expiry):
 
     machine_id = machine_id.upper()
@@ -17,76 +12,35 @@ def generate_key(machine_id, expiry):
     raw = f"{machine_id}|{expiry}|{SECRET}"
     hash_part = hashlib.sha256(raw.encode()).hexdigest()[:16].upper()
 
-    key = f"{machine_id[:4]}-{expiry.replace('-', '')[:6]}-{hash_part}"
-    return key
+    return f"{machine_id[:4]}-{expiry.replace('-', '')[:6]}-{hash_part}"
 
 
-# =========================
-# VERIFY KEY
-# =========================
-def verify_key(key, machine_id, expiry):
-
-    machine_id = machine_id.upper()
-    expected = generate_key(machine_id, expiry)
-
-    print("EXPECTED:", expected)
-    print("GIVEN:", key)
-
-    return key == expected
-
-
-# =========================
-# API
-# =========================
 @app.route("/activate", methods=["POST"])
 def activate():
 
-    try:
-        data = request.get_json(force=True)
+    data = request.get_json()
 
-        key = data.get("key", "").strip()
-        machine_id = data.get("machine", "").strip().upper()
+    key = data.get("key", "").strip()
+    machine_id = data.get("machine", "").strip().upper()
 
-        if not key or not machine_id:
-            return jsonify({"status": "error"})
-
-        parts = key.split("-")
-        if len(parts) != 3:
-            return jsonify({"status": "error"})
-
-        expiry_part = parts[1]
-
-        # ✅ FIXED EXPIRY (IMPORTANT)
-        year = expiry_part[:4]
-        month = expiry_part[4:6]
-        expiry = f"{year}-{month}-01"
-
-        print("MACHINE:", machine_id)
-        print("EXPIRY:", expiry)
-
-        if verify_key(key, machine_id, expiry):
-            return jsonify({
-                "status": "success",
-                "expiry": expiry
-            })
-
+    parts = key.split("-")
+    if len(parts) != 3:
         return jsonify({"status": "error"})
 
-    except Exception as e:
-        return jsonify({"status": "error", "msg": str(e)})
+    expiry_part = parts[1]
+
+    year = expiry_part[:4]
+    month = expiry_part[4:6]
+    expiry = f"{year}-{month}-01"
+
+    expected = generate_key(machine_id, expiry)
+
+    if key == expected:
+        return jsonify({"status": "success", "expiry": expiry})
+
+    return jsonify({"status": "error"})
 
 
-# =========================
-# HOME
-# =========================
 @app.route("/")
 def home():
-    return "Server Running"
-
-
-# =========================
-# RUN
-# =========================
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+    return "SERVER LIVE 🔥"

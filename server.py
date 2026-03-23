@@ -37,8 +37,8 @@ def activate():
 @app.route("/version", methods=["GET"])
 def version():
     return jsonify({
-        "version": "2.0.1",
-        "url": "https://github.com/kpvkpiyush7-cmd/license-server/releases/download/v2.0.1/ABS.exe"
+        "version": "2.5.1",
+        "url": "https://github.com/kpvkpiyush7-cmd/license-server/releases/download/v2.5.1/ABS.exe"
     })
 
 if __name__ == "__main__":

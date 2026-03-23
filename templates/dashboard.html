@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+
+<h2>License Dashboard</h2>
+
+<table border="1">
+<thead>
+<tr>
+    <th>ID</th>
+    <th>Key</th>
+    <th>Machine</th>
+    <th>Expiry</th>
+    <th>Status</th>
+    <th>Action</th>
+</tr>
+</thead>
+
+<tbody id="list"></tbody>
+</table>
+
+<script>
+async function loadLicenses() {
+
+    const res = await fetch("/licenses");
+    const data = await res.json();
+
+    let html = "";
+
+    data.forEach(l => {
+        html += `
+        <tr>
+            <td>${l.id}</td>
+            <td>${l.key}</td>
+            <td>${l.machine}</td>
+            <td>${l.expiry}</td>
+            <td>${l.status}</td>
+            <td>
+                <button onclick="deactivate(${l.id})">Deactivate</button>
+            </td>
+        </tr>
+        `;
+    });
+
+    document.getElementById("list").innerHTML = html;
+}
+
+async function deactivate(id) {
+    await fetch("/deactivate/" + id, { method: "POST" });
+    loadLicenses();
+}
+
+window.onload = loadLicenses;
+</script>
+
+</body>
+</html>

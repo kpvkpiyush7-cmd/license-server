@@ -15,6 +15,7 @@
     <th>Machine</th>
     <th>Expiry</th>
     <th>Status</th>
+    <th>Payment</th>
     <th>Action</th>
 </tr>
 </thead>
@@ -38,8 +39,12 @@ async function loadLicenses() {
             <td>${l.machine}</td>
             <td>${l.expiry}</td>
             <td>${l.status}</td>
+            <td>${l.payment}</td>
             <td>
                 <button onclick="deactivate(${l.id})">Deactivate</button>
+                <button onclick="activateLic(${l.id})">Activate</button>
+                <button onclick="markPaid(${l.id})">Paid</button>
+                <button onclick="extend(${l.id})">+30 Days</button>
             </td>
         </tr>
         `;
@@ -50,6 +55,21 @@ async function loadLicenses() {
 
 async function deactivate(id) {
     await fetch("/deactivate/" + id, { method: "POST" });
+    loadLicenses();
+}
+
+async function activateLic(id) {
+    await fetch("/activate_license/" + id, { method: "POST" });
+    loadLicenses();
+}
+
+async function markPaid(id) {
+    await fetch("/mark_paid/" + id, { method: "POST" });
+    loadLicenses();
+}
+
+async function extend(id) {
+    await fetch("/extend/" + id, { method: "POST" });
     loadLicenses();
 }
 

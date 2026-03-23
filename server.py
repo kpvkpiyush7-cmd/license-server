@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template
 import hashlib
 import sqlite3
 import os
+from datetime import datetime, timedelta
 
 app = Flask(__name__)
 
@@ -41,7 +42,6 @@ def dashboard():
 @app.route("/login", methods=["POST"])
 def login():
     data = request.get_json()
-
     if data.get("username") == "admin" and data.get("password") == "1234":
         return jsonify({"status": "success"})
     return jsonify({"status": "error"})
@@ -49,7 +49,6 @@ def login():
 # ================= ACTIVATE =================
 @app.route("/activate", methods=["POST"])
 def activate():
-
     data = request.get_json()
     key = data.get("key", "").strip()
     machine = data.get("machine", "").strip().upper()
@@ -87,10 +86,35 @@ def activate():
 
     return jsonify({"status": "error"})
 
+# ================= CHECK (SOFTWARE USE) =================
+@app.route("/check", methods=["POST"])
+def check():
+    data = request.get_json()
+    key = data.get("key")
+    machine = data.get("machine")
+
+    db = get_db()
+    cur = db.cursor()
+
+    cur.execute("SELECT expiry, status FROM licenses WHERE license_key=? AND machine_id=?", (key, machine))
+    row = cur.fetchone()
+
+    if not row:
+        return jsonify({"status": "invalid"})
+
+    expiry, status = row
+
+    if status != "active":
+        return jsonify({"status": "blocked"})
+
+    if datetime.strptime(expiry, "%Y-%m-%d") < datetime.now():
+        return jsonify({"status": "expired"})
+
+    return jsonify({"status": "ok"})
+
 # ================= GET LICENSES =================
 @app.route("/licenses")
 def get_licenses():
-
     db = get_db()
     cur = db.cursor()
 
@@ -109,19 +133,49 @@ def get_licenses():
 
     return jsonify(data)
 
-# ================= DEACTIVATE =================
+# ================= ACTIONS =================
 @app.route("/deactivate/<int:id>", methods=["POST"])
 def deactivate(id):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("UPDATE licenses SET status='inactive' WHERE id=?", (id,))
+    db.commit()
+    return jsonify({"status": "done"})
 
+@app.route("/activate_license/<int:id>", methods=["POST"])
+def activate_license(id):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("UPDATE licenses SET status='active' WHERE id=?", (id,))
+    db.commit()
+    return jsonify({"status": "done"})
+
+@app.route("/mark_paid/<int:id>", methods=["POST"])
+def mark_paid(id):
+    db = get_db()
+    cur = db.cursor()
+    cur.execute("UPDATE licenses SET payment='paid' WHERE id=?", (id,))
+    db.commit()
+    return jsonify({"status": "done"})
+
+@app.route("/extend/<int:id>", methods=["POST"])
+def extend(id):
     db = get_db()
     cur = db.cursor()
 
-    cur.execute("UPDATE licenses SET status='inactive' WHERE id=?", (id,))
-    db.commit()
+    cur.execute("SELECT expiry FROM licenses WHERE id=?", (id,))
+    row = cur.fetchone()
+
+    if row:
+        expiry = datetime.strptime(row[0], "%Y-%m-%d")
+        new_expiry = expiry + timedelta(days=30)
+
+        cur.execute("UPDATE licenses SET expiry=? WHERE id=?", (new_expiry.strftime("%Y-%m-%d"), id))
+        db.commit()
 
     return jsonify({"status": "done"})
 
-# ================= PORT FIX (IMPORTANT) =================
+# ================= PORT =================
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)

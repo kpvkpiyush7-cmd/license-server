@@ -1,17 +1,28 @@
 from flask import Flask, request, jsonify, render_template, redirect, session
 import hashlib
 import sqlite3
+import os
 
 app = Flask(__name__)
 app.secret_key = "SUPER_SECRET_ADMIN_123"
 
 SECRET = "GST_SECURE_2026_ULTRA"
+DB_PATH = os.environ.get("ADMIN_DB_PATH", "admin.db")
+
+
+# =========================
+# DATABASE CONNECTION
+# =========================
+def get_conn():
+    conn = sqlite3.connect(DB_PATH)
+    return conn
+
 
 # =========================
 # DATABASE INIT
 # =========================
 def init_db():
-    conn = sqlite3.connect("admin.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("""
@@ -28,6 +39,7 @@ def init_db():
     conn.close()
 
 init_db()
+
 
 # =========================
 # LOGIN SYSTEM
@@ -47,10 +59,12 @@ def login():
 
     return render_template("login.html")
 
+
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
+
 
 # =========================
 # DASHBOARD (PROTECTED)
@@ -60,6 +74,7 @@ def dashboard():
     if not session.get("admin"):
         return redirect("/login")
     return render_template("dashboard.html")
+
 
 # =========================
 # OLD ACTIVATE (KEEP SAFE)
@@ -93,6 +108,7 @@ def activate():
 
     return jsonify({"status": "error"})
 
+
 # =========================
 # NEW CHECK (CONTROL)
 # =========================
@@ -102,7 +118,7 @@ def check():
 
     key = data.get("key")
 
-    conn = sqlite3.connect("admin.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("SELECT status, expiry FROM licenses WHERE key=?", (key,))
@@ -120,6 +136,7 @@ def check():
 
     return jsonify({"status": "success", "expiry": expiry})
 
+
 # =========================
 # ADD KEY (FROM KEYGEN)
 # =========================
@@ -131,7 +148,7 @@ def add_key():
     machine = data.get("machine")
     expiry = data.get("expiry")
 
-    conn = sqlite3.connect("admin.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     try:
@@ -146,12 +163,13 @@ def add_key():
     conn.close()
     return jsonify({"status": "saved"})
 
+
 # =========================
 # ALL KEYS
 # =========================
 @app.route("/all_keys")
 def all_keys():
-    conn = sqlite3.connect("admin.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("SELECT key, machine, status, expiry FROM licenses")
@@ -170,6 +188,7 @@ def all_keys():
 
     return jsonify(data)
 
+
 # =========================
 # DEACTIVATE
 # =========================
@@ -178,7 +197,7 @@ def deactivate():
     data = request.get_json()
     key = data.get("key")
 
-    conn = sqlite3.connect("admin.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("UPDATE licenses SET status='blocked' WHERE key=?", (key,))
@@ -186,6 +205,7 @@ def deactivate():
     conn.close()
 
     return jsonify({"status": "done"})
+
 
 # =========================
 # ACTIVATE AGAIN
@@ -195,7 +215,7 @@ def activate_key():
     data = request.get_json()
     key = data.get("key")
 
-    conn = sqlite3.connect("admin.db")
+    conn = get_conn()
     cur = conn.cursor()
 
     cur.execute("UPDATE licenses SET status='active' WHERE key=?", (key,))
@@ -203,6 +223,7 @@ def activate_key():
     conn.close()
 
     return jsonify({"status": "done"})
+
 
 # =========================
 # VERSION
@@ -214,8 +235,10 @@ def version():
         "url": "https://github.com/kpvkpiyush7-cmd/license-server/releases/download/v2.5.2/ABS.exe"
     })
 
+
 # =========================
 # RUN
 # =========================
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port)

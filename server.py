@@ -1,20 +1,33 @@
 from flask import Flask, request, jsonify, render_template, redirect, session
 import hashlib
-import sqlite3
 import os
+
+# 🔥 NEW IMPORT (POSTGRESQL)
+import psycopg2
+from urllib.parse import urlparse
 
 app = Flask(__name__)
 app.secret_key = "SUPER_SECRET_ADMIN_123"
 
 SECRET = "GST_SECURE_2026_ULTRA"
-DB_PATH = os.environ.get("ADMIN_DB_PATH", "admin.db")
 
 
 # =========================
-# DATABASE CONNECTION
+# DATABASE CONNECTION (POSTGRESQL)
 # =========================
 def get_conn():
-    conn = sqlite3.connect(DB_PATH)
+    db_url = os.environ.get("DATABASE_URL")
+
+    url = urlparse(db_url)
+
+    conn = psycopg2.connect(
+        database=url.path[1:],
+        user=url.username,
+        password=url.password,
+        host=url.hostname,
+        port=url.port
+    )
+
     return conn
 
 
@@ -27,7 +40,7 @@ def init_db():
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS licenses (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id SERIAL PRIMARY KEY,
         key TEXT UNIQUE,
         machine TEXT,
         status TEXT DEFAULT 'active',
@@ -121,7 +134,7 @@ def check():
     conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute("SELECT status, expiry FROM licenses WHERE key=?", (key,))
+    cur.execute("SELECT status, expiry FROM licenses WHERE key=%s", (key,))
     row = cur.fetchone()
 
     conn.close()
@@ -154,7 +167,7 @@ def add_key():
     try:
         cur.execute("""
             INSERT INTO licenses (key, machine, expiry)
-            VALUES (?, ?, ?)
+            VALUES (%s, %s, %s)
         """, (key, machine, expiry))
         conn.commit()
     except:
@@ -200,7 +213,7 @@ def deactivate():
     conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute("UPDATE licenses SET status='blocked' WHERE key=?", (key,))
+    cur.execute("UPDATE licenses SET status='blocked' WHERE key=%s", (key,))
     conn.commit()
     conn.close()
 
@@ -218,7 +231,7 @@ def activate_key():
     conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute("UPDATE licenses SET status='active' WHERE key=?", (key,))
+    cur.execute("UPDATE licenses SET status='active' WHERE key=%s", (key,))
     conn.commit()
     conn.close()
 

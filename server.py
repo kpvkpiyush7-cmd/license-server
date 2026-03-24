@@ -149,6 +149,7 @@ def check():
     data = request.get_json()
 
     key = data.get("key")
+    machine = data.get("machine", "").strip().upper()
 
     conn = get_conn()
     cur = conn.cursor()
@@ -166,7 +167,20 @@ def check():
     if status != "active":
         return jsonify({"status": "blocked"})
 
-    return jsonify({"status": "success", "expiry": expiry})
+    # 🔥 HASH VALIDATION ADD
+    try:
+        expiry_part, hash_part = key.split("-")
+
+        raw = f"{machine}|{expiry}|{SECRET}"
+        expected = hashlib.sha256(raw.encode()).hexdigest()[:16].upper()
+
+        if hash_part == expected:
+            return jsonify({"status": "success", "expiry": expiry})
+
+    except:
+        pass
+
+    return jsonify({"status": "invalid"})
 
 
 # =========================

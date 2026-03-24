@@ -18,6 +18,12 @@ SECRET = "GST_SECURE_2026_ULTRA"
 def get_conn():
     db_url = os.environ.get("DATABASE_URL")
 
+    if not db_url:
+        raise Exception("DATABASE_URL NOT FOUND ❌")
+
+    from urllib.parse import urlparse
+    import psycopg2
+
     url = urlparse(db_url)
 
     conn = psycopg2.connect(

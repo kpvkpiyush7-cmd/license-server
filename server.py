@@ -109,12 +109,26 @@ def activate():
     if not key or not machine:
         return jsonify({"status": "error"})
 
+    conn = get_conn()
+    cur = conn.cursor()
+
+    # 🔥 DB CHECK
+    cur.execute("SELECT status, expiry FROM licenses WHERE key=%s", (key,))
+    row = cur.fetchone()
+
+    conn.close()
+
+    if not row:
+        return jsonify({"status": "invalid"})
+
+    status, expiry = row
+
+    if status != "active":
+        return jsonify({"status": "blocked"})
+
+    # 🔥 HASH VALIDATION
     try:
         expiry_part, hash_part = key.split("-")
-
-        year = expiry_part[:4]
-        month = expiry_part[4:6]
-        expiry = f"{year}-{month}-01"
 
         raw = f"{machine}|{expiry}|{SECRET}"
         expected = hashlib.sha256(raw.encode()).hexdigest()[:16].upper()
@@ -125,8 +139,7 @@ def activate():
     except:
         pass
 
-    return jsonify({"status": "error"})
-
+    return jsonify({"status": "invalid"})
 
 # =========================
 # NEW CHECK (CONTROL)

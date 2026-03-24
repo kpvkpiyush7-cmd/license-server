@@ -1,11 +1,15 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template, redirect, session
 import hashlib
 import sqlite3
 
 app = Flask(__name__)
+app.secret_key = "SUPER_SECRET_ADMIN_123"
 
 SECRET = "GST_SECURE_2026_ULTRA"
 
+# =========================
+# DATABASE INIT
+# =========================
 def init_db():
     conn = sqlite3.connect("admin.db")
     cur = conn.cursor()
@@ -25,6 +29,41 @@ def init_db():
 
 init_db()
 
+# =========================
+# LOGIN SYSTEM
+# =========================
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        if username == "admin" and password == "admin123":
+            session["admin"] = True
+            return redirect("/")
+
+        return render_template("login.html", error="Invalid Login")
+
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
+
+# =========================
+# DASHBOARD (PROTECTED)
+# =========================
+@app.route("/")
+def dashboard():
+    if not session.get("admin"):
+        return redirect("/login")
+    return render_template("dashboard.html")
+
+# =========================
+# OLD ACTIVATE (KEEP SAFE)
+# =========================
 @app.route("/activate", methods=["POST"])
 def activate():
 
@@ -54,6 +93,9 @@ def activate():
 
     return jsonify({"status": "error"})
 
+# =========================
+# NEW CHECK (CONTROL)
+# =========================
 @app.route("/check", methods=["POST"])
 def check():
     data = request.get_json()
@@ -78,41 +120,9 @@ def check():
 
     return jsonify({"status": "success", "expiry": expiry})
 
-@app.route("/deactivate", methods=["POST"])
-def deactivate():
-    data = request.get_json()
-    key = data.get("key")
-
-    conn = sqlite3.connect("admin.db")
-    cur = conn.cursor()
-
-    cur.execute("UPDATE licenses SET status='blocked' WHERE key=?", (key,))
-    conn.commit()
-    conn.close()
-
-    return jsonify({"status": "done"})
-
-@app.route("/all_keys")
-def all_keys():
-    conn = sqlite3.connect("admin.db")
-    cur = conn.cursor()
-
-    cur.execute("SELECT key, machine, status, expiry FROM licenses")
-    rows = cur.fetchall()
-
-    conn.close()
-
-    data = []
-    for r in rows:
-        data.append({
-            "key": r[0],
-            "machine": r[1],
-            "status": r[2],
-            "expiry": r[3]
-        })
-
-    return jsonify(data)
-
+# =========================
+# ADD KEY (FROM KEYGEN)
+# =========================
 @app.route("/add_key", methods=["POST"])
 def add_key():
     data = request.get_json()
@@ -136,6 +146,67 @@ def add_key():
     conn.close()
     return jsonify({"status": "saved"})
 
+# =========================
+# ALL KEYS
+# =========================
+@app.route("/all_keys")
+def all_keys():
+    conn = sqlite3.connect("admin.db")
+    cur = conn.cursor()
+
+    cur.execute("SELECT key, machine, status, expiry FROM licenses")
+    rows = cur.fetchall()
+
+    conn.close()
+
+    data = []
+    for r in rows:
+        data.append({
+            "key": r[0],
+            "machine": r[1],
+            "status": r[2],
+            "expiry": r[3]
+        })
+
+    return jsonify(data)
+
+# =========================
+# DEACTIVATE
+# =========================
+@app.route("/deactivate", methods=["POST"])
+def deactivate():
+    data = request.get_json()
+    key = data.get("key")
+
+    conn = sqlite3.connect("admin.db")
+    cur = conn.cursor()
+
+    cur.execute("UPDATE licenses SET status='blocked' WHERE key=?", (key,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "done"})
+
+# =========================
+# ACTIVATE AGAIN
+# =========================
+@app.route("/activate_key", methods=["POST"])
+def activate_key():
+    data = request.get_json()
+    key = data.get("key")
+
+    conn = sqlite3.connect("admin.db")
+    cur = conn.cursor()
+
+    cur.execute("UPDATE licenses SET status='active' WHERE key=?", (key,))
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "done"})
+
+# =========================
+# VERSION
+# =========================
 @app.route("/version", methods=["GET"])
 def version():
     return jsonify({
@@ -143,7 +214,8 @@ def version():
         "url": "https://github.com/kpvkpiyush7-cmd/license-server/releases/download/v2.5.2/ABS.exe"
     })
 
+# =========================
+# RUN
+# =========================
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
-
-

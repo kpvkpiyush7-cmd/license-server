@@ -56,17 +56,10 @@ def init_db():
 
     conn.commit()
     conn.close()
-# =========================
-# SAFE DB INIT (FIRST REQUEST)
-# =========================
-db_initialized = False
-
-@app.before_request
-def ensure_db():
-    global db_initialized
-    if not db_initialized:
-        init_db()
-        db_initialized = True
+try:
+    init_db()
+except Exception as e:
+    print("DB INIT ERROR:", e)
 # =========================
 # LOGIN SYSTEM
 # =========================

@@ -1,4 +1,3 @@
 flask
 gunicorn
-requests
-web: gunicorn server:app
+psycopg2-binary

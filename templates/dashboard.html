@@ -9,7 +9,7 @@
             font-family: Arial;
             background: #0f172a;
             color: white;
-            padding: 10px;
+            padding: 15px;
         }
 
         h2 {
@@ -17,19 +17,24 @@
             color: #38bdf8;
         }
 
+        h3 {
+            color: #22c55e;
+        }
+
         .card {
             background: #1e293b;
-            padding: 10px;
+            padding: 12px;
             margin: 10px 0;
             border-radius: 10px;
         }
 
         .btn {
-            padding: 5px 10px;
-            margin: 5px;
+            padding: 6px 10px;
+            margin: 5px 3px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
+            font-weight: bold;
         }
 
         .green { background: #22c55e; }
@@ -39,9 +44,21 @@
         input {
             width: 100%;
             padding: 8px;
-            margin-bottom: 10px;
+            margin: 5px 0;
             border-radius: 5px;
             border: none;
+        }
+
+        .top-box {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 10px;
+        }
+
+        @media(min-width:700px){
+            .top-box {
+                grid-template-columns: 1fr 1fr;
+            }
         }
     </style>
 </head>
@@ -50,12 +67,41 @@
 
 <h2>🔥 License Control Panel</h2>
 
+<!-- SEARCH -->
 <input type="text" id="search" placeholder="Search key..." onkeyup="filterKeys()">
 
+<!-- LICENSE LIST -->
 <div id="list"></div>
+
+<hr>
+
+<!-- RESELLER SECTION -->
+<h2>👤 Reseller Management</h2>
+
+<div class="top-box">
+
+    <!-- ADD RESELLER -->
+    <div class="card">
+        <h3>Add Reseller</h3>
+
+        <input id="r_name" placeholder="Name">
+        <input id="r_mobile" placeholder="Mobile">
+        <input id="r_pass" placeholder="Password">
+        <input id="r_balance" placeholder="Initial Balance">
+
+        <button class="btn green" onclick="addReseller()">Add Reseller</button>
+    </div>
+
+</div>
+
+<!-- RESELLER LIST -->
+<div id="resellers"></div>
 
 <script>
 
+//////////////////////////////////////////////////////
+// 🔥 LOAD LICENSE KEYS
+//////////////////////////////////////////////////////
 async function loadKeys() {
     let res = await fetch('/all_keys');
     let data = await res.json();
@@ -82,6 +128,9 @@ async function loadKeys() {
     document.getElementById("list").innerHTML = html;
 }
 
+//////////////////////////////////////////////////////
+// 🔥 ACTIVATE / DEACTIVATE
+//////////////////////////////////////////////////////
 async function deactivate(key) {
     await fetch('/deactivate', {
         method: 'POST',
@@ -100,9 +149,12 @@ async function activate(key) {
     loadKeys();
 }
 
+//////////////////////////////////////////////////////
+// 🔍 SEARCH
+//////////////////////////////////////////////////////
 function filterKeys() {
     let input = document.getElementById("search").value.toLowerCase();
-    let cards = document.querySelectorAll(".card");
+    let cards = document.querySelectorAll("#list .card");
 
     cards.forEach(c => {
         if (c.innerText.toLowerCase().includes(input)) {
@@ -113,7 +165,75 @@ function filterKeys() {
     });
 }
 
+//////////////////////////////////////////////////////
+// 👤 LOAD RESELLERS
+//////////////////////////////////////////////////////
+async function loadResellers(){
+    let res = await fetch('/admin/resellers')
+    let data = await res.json()
+
+    let html = ""
+
+    data.forEach(r=>{
+        html += `
+        <div class="card">
+            <b>${r.name}</b> (${r.mobile})<br>
+            Balance: ₹${r.balance}<br>
+
+            <input id="amt_${r.id}" placeholder="Add Balance">
+            <button class="btn blue" onclick="addBalance(${r.id})">Recharge</button>
+        </div>
+        `
+    })
+
+    document.getElementById("resellers").innerHTML = html
+}
+
+//////////////////////////////////////////////////////
+// ➕ ADD RESELLER
+//////////////////////////////////////////////////////
+async function addReseller(){
+    await fetch('/admin/add_reseller',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+            name:document.getElementById("r_name").value,
+            mobile:document.getElementById("r_mobile").value,
+            password:document.getElementById("r_pass").value,
+            balance:document.getElementById("r_balance").value
+        })
+    })
+
+    alert("Reseller Added ✅")
+
+    loadResellers()
+}
+
+//////////////////////////////////////////////////////
+// 💰 ADD BALANCE
+//////////////////////////////////////////////////////
+async function addBalance(id){
+    let amt = document.getElementById("amt_"+id).value
+
+    await fetch('/admin/add_balance',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({
+            reseller_id:id,
+            amount:amt
+        })
+    })
+
+    alert("Balance Added 💰")
+
+    loadResellers()
+}
+
+//////////////////////////////////////////////////////
+// 🚀 INIT LOAD
+//////////////////////////////////////////////////////
 loadKeys();
+loadResellers();
 
 </script>
 

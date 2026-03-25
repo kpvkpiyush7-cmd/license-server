@@ -64,6 +64,7 @@
 </head>
 
 <body>
+<a href="/logout" class="btn red" style="float:right;">Logout</a>    
 
 <h2>🔥 License Control Panel</h2>
 
@@ -90,6 +91,7 @@
         <input id="r_balance" placeholder="Initial Balance">
 
         <button class="btn green" onclick="addReseller()">Add Reseller</button>
+       
     </div>
 
 </div>
@@ -121,6 +123,8 @@ async function loadKeys() {
 
             <button class="btn green" onclick="activate('${k.key}')">Activate</button>
             <button class="btn red" onclick="deactivate('${k.key}')">Deactivate</button>
+            <button class="btn blue" onclick="renewKey('${k.key}')">Renew</button>
+            <button class="btn red" onclick="deleteKey('${k.key}')">Delete</button>
         </div>
         `;
     });
@@ -147,6 +151,39 @@ async function activate(key) {
         body: JSON.stringify({ key })
     });
     loadKeys();
+}
+function renewKey(key){
+
+    let months = prompt("Kitne month renew karna hai? (1 / 12 / 120)");
+
+    if(!months) return;
+
+    fetch('/renew_key',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({key:key, months:months})
+    })
+    .then(r=>r.json())
+    .then(d=>{
+        alert("New Key: "+d.new_key);
+        loadKeys();
+    });
+}
+
+function deleteKey(key){
+
+    if(!confirm("Delete this key?")) return;
+
+    fetch('/delete_key',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({key:key})
+    })
+    .then(r=>r.json())
+    .then(d=>{
+        alert("Deleted");
+        loadKeys();
+    });
 }
 
 //////////////////////////////////////////////////////

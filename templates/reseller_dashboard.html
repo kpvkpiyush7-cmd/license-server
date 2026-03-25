@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reseller Panel</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            padding: 10px;
+        }
+
+        h2 {
+            text-align: center;
+            color: #38bdf8;
+        }
+
+        .card {
+            background: #1e293b;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 10px;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        .btn {
+            padding: 10px;
+            margin-top: 10px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-weight: bold;
+        }
+
+        .green { background: #22c55e; }
+        .blue { background: #3b82f6; }
+
+        .result {
+            background: #020617;
+            padding: 10px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h2>🔥 Reseller Panel</h2>
+
+<div class="card">
+    <b>Welcome:</b> <span id="name"></span><br>
+</div>
+
+<div class="card">
+    <h3>Generate License</h3>
+
+    <input type="text" id="machine" placeholder="Enter Machine ID">
+
+    <select id="months">
+        <option value="1">1 Month</option>
+        <option value="3">3 Month</option>
+        <option value="12">1 Year</option>
+    </select>
+
+    <button class="btn green" onclick="generate()">Generate Key</button>
+
+    <div class="result" id="result"></div>
+</div>
+
+<div class="card">
+    <h3>My Licenses</h3>
+    <div id="list"></div>
+</div>
+
+<script>
+
+document.getElementById("name").innerText = localStorage.getItem("reseller_name")
+
+function generate(){
+    fetch("/reseller/generate",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            reseller_id: localStorage.getItem("reseller_id"),
+            machine: document.getElementById("machine").value,
+            months: document.getElementById("months").value
+        })
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.status=="success"){
+            document.getElementById("result").innerHTML =
+                "KEY: " + data.key + "<br>Expiry: " + data.expiry
+            load()
+        }else{
+            alert("No Balance ❌")
+        }
+    })
+}
+
+async function load(){
+    let res = await fetch('/all_keys')
+    let data = await res.json()
+
+    let html = ""
+
+    data.forEach(k => {
+        html += `
+        <div class="card">
+            ${k.key}<br>
+            Expiry: ${k.expiry}
+        </div>
+        `
+    })
+
+    document.getElementById("list").innerHTML = html
+}
+
+load()
+
+</script>
+
+</body>
+</html>

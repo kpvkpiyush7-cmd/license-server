@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Reseller Login</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        body {
+            background: #0f172a;
+            font-family: Arial;
+            color: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .box {
+            background: #1e293b;
+            padding: 30px;
+            border-radius: 12px;
+            width: 320px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        h2 {
+            text-align: center;
+            color: #38bdf8;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 12px 0;
+            border-radius: 6px;
+            border: none;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            background: #22c55e;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="box">
+    <h2>Reseller Login</h2>
+
+    <input type="text" id="mobile" placeholder="Mobile">
+    <input type="password" id="password" placeholder="Password">
+
+    <button onclick="login()">Login</button>
+</div>
+
+<script>
+function login(){
+    fetch("/reseller/login", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({
+            mobile:document.getElementById("mobile").value,
+            password:document.getElementById("password").value
+        })
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.status=="success"){
+            localStorage.setItem("reseller_id", data.reseller_id)
+            localStorage.setItem("reseller_name", data.name)
+            window.location = "/reseller/dashboard"
+        }else{
+            alert("Invalid Login ❌")
+        }
+    })
+}
+</script>
+
+</body>
+</html>

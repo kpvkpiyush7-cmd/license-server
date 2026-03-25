@@ -188,6 +188,25 @@ def get_resellers():
         })
 
     return jsonify(data)
+
+# =========================
+# GET RESELLER BALANCE
+# =========================
+@app.route("/reseller/balance/<int:rid>")
+def reseller_balance(rid):
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("SELECT balance FROM resellers WHERE id=%s", (rid,))
+    row = cur.fetchone()
+
+    conn.close()
+
+    if not row:
+        return jsonify({"balance": 0})
+
+    return jsonify({"balance": row[0]})
 # =========================
 # RESELLER LOGIN
 # =========================

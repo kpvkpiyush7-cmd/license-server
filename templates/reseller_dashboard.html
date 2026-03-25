@@ -63,6 +63,7 @@
 <body>
 
 <h2>🔥 Reseller Panel</h2>
+<button class="btn blue" onclick="logoutReseller()">Logout</button>
 
 <!-- USER INFO -->
 <div class="card">
@@ -78,7 +79,7 @@
 
     <select id="months">
         <option value="1">1 Month (₹50)</option>
-        <option value="12">1 Year (₹399)</option>
+        <option value="12">1 Year (₹499)</option>
         <option value="999">Lifetime (₹2499)</option>
     </select>
 
@@ -111,6 +112,11 @@ async function loadBalance(){
     let data = await res.json()
 
     document.getElementById("balance").innerText = data.balance
+}
+
+function logoutReseller(){
+    localStorage.clear();
+    window.location = "/reseller/logout";
 }
 
 //////////////////////////////////////////////////////
@@ -152,7 +158,9 @@ function generate(){
 // 📜 LOAD LICENSE LIST
 //////////////////////////////////////////////////////
 async function load(){
-    let res = await fetch('/all_keys')
+    let rid = localStorage.getItem("reseller_id");
+
+    let res = await fetch('/reseller/my_keys/' + rid)
     let data = await res.json()
 
     let html = ""
@@ -168,7 +176,6 @@ async function load(){
 
     document.getElementById("list").innerHTML = html
 }
-
 //////////////////////////////////////////////////////
 // 🚀 INIT
 //////////////////////////////////////////////////////

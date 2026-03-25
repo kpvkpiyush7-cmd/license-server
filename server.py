@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify, render_template, redirect, session
 import hashlib
 import os
+from datetime import datetime, timedelta
 
 # 🔥 NEW IMPORT (POSTGRESQL)
 import psycopg2
@@ -10,6 +11,11 @@ app = Flask(__name__)
 app.secret_key = "SUPER_SECRET_ADMIN_123"
 
 SECRET = "GST_SECURE_2026_ULTRA"
+
+def admin_required():
+    if not session.get("admin"):
+        return False
+    return True
 
 
 # =========================
@@ -120,6 +126,10 @@ def logout():
 
 @app.route("/admin/add_reseller", methods=["POST"])
 def add_reseller():
+
+    if not admin_required():
+        return jsonify({"status":"unauthorized"}), 401
+
     data = request.json
 
     name = data["name"]
@@ -138,10 +148,14 @@ def add_reseller():
     conn.commit()
     conn.close()
 
-    return jsonify({"status": "success"})
+    return jsonify({"status":"success"})
 
 @app.route("/admin/add_balance", methods=["POST"])
 def add_balance():
+
+    if not admin_required():
+        return jsonify({"status":"unauthorized"}), 401
+
     data = request.json
 
     reseller_id = data["reseller_id"]
@@ -150,12 +164,10 @@ def add_balance():
     conn = get_conn()
     cur = conn.cursor()
 
-    # add balance
     cur.execute("""
         UPDATE resellers SET balance = balance + %s WHERE id=%s
     """, (amount, reseller_id))
 
-    # entry
     cur.execute("""
         INSERT INTO wallet_transactions (reseller_id, amount, type, note)
         VALUES (%s, %s, 'credit', 'Admin Recharge')
@@ -164,10 +176,13 @@ def add_balance():
     conn.commit()
     conn.close()
 
-    return jsonify({"status": "success"})
+    return jsonify({"status":"success"})
 
 @app.route("/admin/resellers")
 def get_resellers():
+
+    if not admin_required():
+        return jsonify({"status":"unauthorized"}), 401
 
     conn = get_conn()
     cur = conn.cursor()
@@ -229,13 +244,10 @@ def reseller_login():
     conn.close()
 
     if row:
-        return jsonify({
-            "status": "success",
-            "reseller_id": row[0],
-            "name": row[1]
-        })
-
-    return jsonify({"status": "error"})
+        session["reseller"] = True
+        session["reseller_id"] = row[0]
+        session["reseller_name"] = row[1]
+        return jsonify({"status":"success","id":row[0],"name":row[1]})
 
 
 # =========================
@@ -253,6 +265,8 @@ def reseller_login_page():
 
 @app.route("/reseller/dashboard")
 def reseller_dashboard_page():
+    if not session.get("reseller"):
+        return redirect("/reseller")
     return render_template("reseller_dashboard.html")
 
 
@@ -376,7 +390,7 @@ def add_key():
 # PRICE CONFIG
 PRICE = {
     1: 50,
-    12: 399,
+    12: 499,
     999: 2499   # lifetime
 }
 
@@ -436,6 +450,102 @@ def reseller_generate():
 
     return jsonify({"status": "success", "key": key, "expiry": expiry})
 
+@app.route("/reseller/logout")
+def reseller_logout():
+    session.clear()
+    return redirect("/reseller")
+
+
+@app.route("/renew_key", methods=["POST"])
+def renew_key():
+
+    if not admin_required():
+        return jsonify({"status":"unauthorized"}), 401
+
+    data = request.get_json()
+    key = data.get("key")
+    months = int(data.get("months", 1))
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("SELECT machine FROM licenses WHERE key=%s", (key,))
+    row = cur.fetchone()
+
+    if not row:
+        return jsonify({"status":"error","msg":"Key not found"})
+
+    machine = row[0]
+
+    new_expiry_date = datetime.now() + timedelta(days=30*months)
+    expiry_str = new_expiry_date.strftime("%Y-%m-%d")
+
+    expiry_part = new_expiry_date.strftime("%Y%m")
+
+    raw = f"{machine}|{expiry_str}|{SECRET}"
+    new_hash = hashlib.sha256(raw.encode()).hexdigest()[:16].upper()
+
+    new_key = f"{expiry_part}-{new_hash}"
+
+    cur.execute("""
+        UPDATE licenses 
+        SET key=%s, expiry=%s, status='active'
+        WHERE key=%s
+    """, (new_key, expiry_str, key))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status":"success","new_key":new_key,"expiry":expiry_str})
+
+@app.route("/delete_key", methods=["POST"])
+def delete_key():
+
+    if not admin_required():
+        return jsonify({"status":"unauthorized"}), 401
+
+    data = request.get_json()
+    key = data.get("key")
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("DELETE FROM licenses WHERE key=%s", (key,))
+    cur.execute("DELETE FROM reseller_licenses WHERE license_key=%s", (key,))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status":"deleted"})
+
+@app.route("/reseller/my_keys/<int:rid>")
+def reseller_my_keys(rid):
+
+    if not session.get("reseller"):
+        return jsonify([])
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT rl.license_key, l.expiry, l.status
+        FROM reseller_licenses rl
+        JOIN licenses l ON rl.license_key = l.key
+        WHERE rl.reseller_id=%s
+    """, (rid,))
+
+    data = cur.fetchall()
+    conn.close()
+
+    result = []
+    for r in data:
+        result.append({
+            "key": r[0],
+            "expiry": r[1],
+            "status": r[2]
+        })
+
+    return jsonify(result)
 
 
 # =========================
@@ -468,6 +578,8 @@ def all_keys():
 # =========================
 @app.route("/deactivate", methods=["POST"])
 def deactivate():
+    if not admin_required():
+        return jsonify({"status":"unauthorized"}), 401
     data = request.get_json()
     key = data.get("key")
 
@@ -486,6 +598,8 @@ def deactivate():
 # =========================
 @app.route("/activate_key", methods=["POST"])
 def activate_key():
+    if not admin_required():
+        return jsonify({"status":"unauthorized"}), 401
     data = request.get_json()
     key = data.get("key")
 

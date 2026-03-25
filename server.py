@@ -619,8 +619,8 @@ def activate_key():
 @app.route("/version", methods=["GET"])
 def version():
     return jsonify({
-        "version": "2.5.2",
-        "url": "https://github.com/kpvkpiyush7-cmd/license-server/releases/download/v2.5.2/ABS.exe"
+        "version": "2.5.3",
+        "url": "https://github.com/kpvkpiyush7-cmd/license-server/releases/download/v2.5.3/ABS.exe"
     })
 
 

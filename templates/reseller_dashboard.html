@@ -51,6 +51,12 @@
             border-radius: 6px;
             margin-top: 10px;
         }
+
+        .balance {
+            font-size: 18px;
+            color: #22c55e;
+            margin-top: 5px;
+        }
     </style>
 </head>
 
@@ -58,19 +64,22 @@
 
 <h2>🔥 Reseller Panel</h2>
 
+<!-- USER INFO -->
 <div class="card">
     <b>Welcome:</b> <span id="name"></span><br>
+    💰 Balance: ₹<span id="balance">0</span>
 </div>
 
+<!-- GENERATE LICENSE -->
 <div class="card">
     <h3>Generate License</h3>
 
     <input type="text" id="machine" placeholder="Enter Machine ID">
 
     <select id="months">
-        <option value="1">1 Month</option>
-        <option value="3">3 Month</option>
-        <option value="12">1 Year</option>
+        <option value="1">1 Month (₹50)</option>
+        <option value="12">1 Year (₹399)</option>
+        <option value="999">Lifetime (₹2499)</option>
     </select>
 
     <button class="btn green" onclick="generate()">Generate Key</button>
@@ -78,6 +87,7 @@
     <div class="result" id="result"></div>
 </div>
 
+<!-- LICENSE LIST -->
 <div class="card">
     <h3>My Licenses</h3>
     <div id="list"></div>
@@ -85,15 +95,42 @@
 
 <script>
 
-document.getElementById("name").innerText = localStorage.getItem("reseller_name")
+//////////////////////////////////////////////////////
+// 👤 USER NAME
+//////////////////////////////////////////////////////
+document.getElementById("name").innerText =
+    localStorage.getItem("reseller_name") || "Reseller";
 
+//////////////////////////////////////////////////////
+// 💰 LOAD BALANCE
+//////////////////////////////////////////////////////
+async function loadBalance(){
+    let rid = localStorage.getItem("reseller_id")
+
+    let res = await fetch('/reseller/balance/' + rid)
+    let data = await res.json()
+
+    document.getElementById("balance").innerText = data.balance
+}
+
+//////////////////////////////////////////////////////
+// 🔑 GENERATE LICENSE
+//////////////////////////////////////////////////////
 function generate(){
+
+    let machine = document.getElementById("machine").value
+
+    if(machine.trim() === ""){
+        alert("Enter Machine ID ❌")
+        return
+    }
+
     fetch("/reseller/generate",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
             reseller_id: localStorage.getItem("reseller_id"),
-            machine: document.getElementById("machine").value,
+            machine: machine,
             months: document.getElementById("months").value
         })
     })
@@ -101,14 +138,19 @@ function generate(){
     .then(data=>{
         if(data.status=="success"){
             document.getElementById("result").innerHTML =
-                "KEY: " + data.key + "<br>Expiry: " + data.expiry
+                "<b>KEY:</b> " + data.key + "<br><b>Expiry:</b> " + data.expiry
+
             load()
+            loadBalance()   // 🔥 auto update balance
         }else{
-            alert("No Balance ❌")
+            alert("Low Balance ❌")
         }
     })
 }
 
+//////////////////////////////////////////////////////
+// 📜 LOAD LICENSE LIST
+//////////////////////////////////////////////////////
 async function load(){
     let res = await fetch('/all_keys')
     let data = await res.json()
@@ -127,7 +169,11 @@ async function load(){
     document.getElementById("list").innerHTML = html
 }
 
+//////////////////////////////////////////////////////
+// 🚀 INIT
+//////////////////////////////////////////////////////
 load()
+loadBalance()
 
 </script>
 

@@ -44,6 +44,7 @@ def init_db():
     conn = get_conn()
     cur = conn.cursor()
 
+    # EXISTING TABLE
     cur.execute("""
     CREATE TABLE IF NOT EXISTS licenses (
         id SERIAL PRIMARY KEY,
@@ -51,6 +52,39 @@ def init_db():
         machine TEXT,
         status TEXT DEFAULT 'active',
         expiry TEXT
+    )
+    """)
+
+    # 🔥 ADD THIS BELOW
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS resellers (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        mobile TEXT UNIQUE,
+        password TEXT,
+        balance REAL DEFAULT 0,
+        status TEXT DEFAULT 'active'
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS reseller_licenses (
+        id SERIAL PRIMARY KEY,
+        reseller_id INTEGER,
+        license_key TEXT,
+        machine TEXT,
+        expiry TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS wallet_transactions (
+        id SERIAL PRIMARY KEY,
+        reseller_id INTEGER,
+        amount REAL,
+        type TEXT,
+        note TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )
     """)
 
@@ -84,6 +118,106 @@ def logout():
     session.clear()
     return redirect("/login")
 
+@app.route("/admin/add_reseller", methods=["POST"])
+def add_reseller():
+    data = request.json
+
+    name = data["name"]
+    mobile = data["mobile"]
+    password = data["password"]
+    balance = float(data.get("balance", 0))
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO resellers (name, mobile, password, balance)
+        VALUES (%s, %s, %s, %s)
+    """, (name, mobile, password, balance))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "success"})
+
+@app.route("/admin/add_balance", methods=["POST"])
+def add_balance():
+    data = request.json
+
+    reseller_id = data["reseller_id"]
+    amount = float(data["amount"])
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    # add balance
+    cur.execute("""
+        UPDATE resellers SET balance = balance + %s WHERE id=%s
+    """, (amount, reseller_id))
+
+    # entry
+    cur.execute("""
+        INSERT INTO wallet_transactions (reseller_id, amount, type, note)
+        VALUES (%s, %s, 'credit', 'Admin Recharge')
+    """, (reseller_id, amount))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "success"})
+
+@app.route("/admin/resellers")
+def get_resellers():
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("SELECT id, name, mobile, balance, status FROM resellers")
+    rows = cur.fetchall()
+
+    conn.close()
+
+    data = []
+    for r in rows:
+        data.append({
+            "id": r[0],
+            "name": r[1],
+            "mobile": r[2],
+            "balance": r[3],
+            "status": r[4]
+        })
+
+    return jsonify(data)
+# =========================
+# RESELLER LOGIN
+# =========================
+@app.route("/reseller/login", methods=["POST"])
+def reseller_login():
+    data = request.json
+
+    mobile = data.get("mobile")
+    password = data.get("password")
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT id, name FROM resellers
+        WHERE mobile=%s AND password=%s AND status='active'
+    """, (mobile, password))
+
+    row = cur.fetchone()
+    conn.close()
+
+    if row:
+        return jsonify({
+            "status": "success",
+            "reseller_id": row[0],
+            "name": row[1]
+        })
+
+    return jsonify({"status": "error"})
+
 
 # =========================
 # DASHBOARD (PROTECTED)
@@ -93,6 +227,14 @@ def dashboard():
     if not session.get("admin"):
         return redirect("/login")
     return render_template("dashboard.html")
+
+@app.route("/reseller")
+def reseller_login_page():
+    return render_template("reseller_login.html")
+
+@app.route("/reseller/dashboard")
+def reseller_dashboard_page():
+    return render_template("reseller_dashboard.html")
 
 
 # =========================
@@ -208,6 +350,73 @@ def add_key():
 
     conn.close()
     return jsonify({"status": "saved"})
+
+# =========================
+# RESELLER GENERATE KEY
+# =========================
+# PRICE CONFIG
+PRICE = {
+    1: 50,
+    12: 399,
+    999: 2499   # lifetime
+}
+
+@app.route("/reseller/generate", methods=["POST"])
+def reseller_generate():
+
+    data = request.json
+
+    reseller_id = data["reseller_id"]
+    machine = data["machine"].upper()
+    months = int(data["months"])
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    cur.execute("SELECT balance FROM resellers WHERE id=%s", (reseller_id,))
+    balance = cur.fetchone()[0]
+
+    price = PRICE.get(months, 50)
+
+    if balance < price:
+        return jsonify({"status": "no_balance"})
+
+    from datetime import datetime, timedelta
+
+    if months == 999:
+        expiry = "2099-12-31"
+    else:
+        expiry = (datetime.now() + timedelta(days=30*months)).strftime("%Y-%m-%d")
+
+    raw = f"{machine}|{expiry}|{SECRET}"
+    key = expiry.replace("-", "")[:6] + "-" + hashlib.sha256(raw.encode()).hexdigest()[:16].upper()
+
+    # save license
+    cur.execute("""
+        INSERT INTO licenses (key, machine, expiry)
+        VALUES (%s, %s, %s)
+    """, (key, machine, expiry))
+
+    # save reseller record
+    cur.execute("""
+        INSERT INTO reseller_licenses (reseller_id, license_key, machine, expiry)
+        VALUES (%s, %s, %s, %s)
+    """, (reseller_id, key, machine, expiry))
+
+    # deduct balance
+    cur.execute("UPDATE resellers SET balance = balance - %s WHERE id=%s", (price, reseller_id))
+
+    # wallet log
+    cur.execute("""
+        INSERT INTO wallet_transactions (reseller_id, amount, type, note)
+        VALUES (%s, %s, 'debit', 'License Generated')
+    """, (reseller_id, price))
+
+    conn.commit()
+    conn.close()
+
+    return jsonify({"status": "success", "key": key, "expiry": expiry})
+
 
 
 # =========================

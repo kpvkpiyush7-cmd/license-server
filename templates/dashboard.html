@@ -113,8 +113,10 @@ async function loadKeys() {
     data.forEach(k => {
         html += `
         <div class="card">
+            <b>Customer:</b> ${k.customer_name || "N/A"}<br>
+            <b>Mobile:</b> ${k.customer_mobile || "N/A"}<br>
             <b>Key:</b> ${k.key}<br>
-            <b>Machine:</b> ${k.machine}<br>
+            <b>Machine:</b> ${k.machine || "N/A"}<br>
             <b>Expiry:</b> ${k.expiry}<br>
             <b>Status:</b> 
                 <span style="color:${k.status=='active'?'lime':'red'}">

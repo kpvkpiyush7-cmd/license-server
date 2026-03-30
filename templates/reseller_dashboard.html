@@ -75,6 +75,8 @@
 <div class="card">
     <h3>Generate License</h3>
 
+    <input type="text" id="cust_name" placeholder="Customer Name">
+    <input type="text" id="cust_mobile" placeholder="Customer Mobile">
     <input type="text" id="machine" placeholder="Enter Machine ID">
 
     <select id="months">
@@ -124,7 +126,19 @@ function logoutReseller(){
 //////////////////////////////////////////////////////
 function generate(){
 
+    let custName = document.getElementById("cust_name").value.trim()
+    let custMobile = document.getElementById("cust_mobile").value.trim()
     let machine = document.getElementById("machine").value
+
+    if(custName === ""){
+        alert("Enter Customer Name ❌")
+        return
+    }
+
+    if(custMobile === ""){
+        alert("Enter Customer Mobile ❌")
+        return
+    }
 
     if(machine.trim() === ""){
         alert("Enter Machine ID ❌")
@@ -136,6 +150,8 @@ function generate(){
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
             reseller_id: localStorage.getItem("reseller_id"),
+            customer_name: custName,
+            customer_mobile: custMobile,
             machine: machine,
             months: document.getElementById("months").value
         })
@@ -146,8 +162,12 @@ function generate(){
             document.getElementById("result").innerHTML =
                 "<b>KEY:</b> " + data.key + "<br><b>Expiry:</b> " + data.expiry
 
+            document.getElementById("cust_name").value = ""
+            document.getElementById("cust_mobile").value = ""
+            document.getElementById("machine").value = ""
+
             load()
-            loadBalance()   // 🔥 auto update balance
+            loadBalance()
         }else{
             alert("Low Balance ❌")
         }
@@ -168,10 +188,15 @@ async function load(){
     data.forEach(k => {
         html += `
         <div class="card">
-            ${k.key}<br>
-            Expiry: ${k.expiry}
+            <b>Customer:</b> ${k.customer_name || "N/A"}<br>
+            <b>Mobile:</b> ${k.customer_mobile || "N/A"}<br>
+            <b>Machine:</b> ${k.machine || "N/A"}<br>
+            <b>Key:</b> ${k.key}<br>
+            <b>Expiry:</b> ${k.expiry}<br>
+            <b>Status:</b> ${k.status}
         </div>
         `
+        
     })
 
     document.getElementById("list").innerHTML = html

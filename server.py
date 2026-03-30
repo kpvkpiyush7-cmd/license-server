@@ -393,13 +393,12 @@ PRICE = {
     12: 499,
     999: 2499   # lifetime
 }
-
 @app.route("/reseller/generate", methods=["POST"])
 def reseller_generate():
 
     data = request.json
 
-    reseller_id = data["reseller_id"]
+    reseller_id = int(data["reseller_id"])   # 🔥 FIX
     machine = data["machine"].upper()
     months = int(data["months"])
 
@@ -407,14 +406,17 @@ def reseller_generate():
     cur = conn.cursor()
 
     cur.execute("SELECT balance FROM resellers WHERE id=%s", (reseller_id,))
-    balance = cur.fetchone()[0]
+    
+    row = cur.fetchone()   # 🔥 FIX
+    if not row:
+        return jsonify({"status": "error", "msg": "Reseller not found"})
+    
+    balance = row[0]
 
     price = PRICE.get(months, 50)
 
     if balance < price:
         return jsonify({"status": "no_balance"})
-
-    from datetime import datetime, timedelta
 
     if months == 999:
         expiry = "2099-12-31"
@@ -424,22 +426,18 @@ def reseller_generate():
     raw = f"{machine}|{expiry}|{SECRET}"
     key = expiry.replace("-", "")[:6] + "-" + hashlib.sha256(raw.encode()).hexdigest()[:16].upper()
 
-    # save license
     cur.execute("""
         INSERT INTO licenses (key, machine, expiry)
         VALUES (%s, %s, %s)
     """, (key, machine, expiry))
 
-    # save reseller record
     cur.execute("""
         INSERT INTO reseller_licenses (reseller_id, license_key, machine, expiry)
         VALUES (%s, %s, %s, %s)
     """, (reseller_id, key, machine, expiry))
 
-    # deduct balance
     cur.execute("UPDATE resellers SET balance = balance - %s WHERE id=%s", (price, reseller_id))
 
-    # wallet log
     cur.execute("""
         INSERT INTO wallet_transactions (reseller_id, amount, type, note)
         VALUES (%s, %s, 'debit', 'License Generated')

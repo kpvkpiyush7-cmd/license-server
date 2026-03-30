@@ -421,22 +421,26 @@ def add_key():
     key = data.get("key")
     machine = data.get("machine")
     expiry = data.get("expiry")
+    customer_name = data.get("customer_name", "")
+    customer_mobile = data.get("customer_mobile", "")
+    reseller_id = data.get("reseller_id", None)
 
     conn = get_conn()
     cur = conn.cursor()
 
     try:
-            cur.execute("""
-                INSERT INTO licenses (key, machine, expiry, customer_name, customer_mobile, reseller_id)
-                VALUES (%s, %s, %s, %s, %s, %s)
-            """, (key, machine, expiry, customer_name, customer_mobile, reseller_id))
+        cur.execute("""
+            INSERT INTO licenses 
+            (key, machine, expiry, customer_name, customer_mobile, reseller_id)
+            VALUES (%s, %s, %s, %s, %s, %s)
+        """, (key, machine, expiry, customer_name, customer_mobile, reseller_id))
+
         conn.commit()
-    except:
-        pass
+    except Exception as e:
+        print("ADD KEY ERROR:", e)
 
     conn.close()
     return jsonify({"status": "saved"})
-
 # =========================
 # RESELLER GENERATE KEY
 # =========================
@@ -482,9 +486,17 @@ def reseller_generate():
     key = expiry.replace("-", "")[:6] + "-" + hashlib.sha256(raw.encode()).hexdigest()[:16].upper()
 
     cur.execute("""
-        INSERT INTO licenses (key, machine, expiry)
-        VALUES (%s, %s, %s)
-    """, (key, machine, expiry))
+        INSERT INTO licenses 
+        (key, machine, expiry, customer_name, customer_mobile, reseller_id)
+        VALUES (%s, %s, %s, %s, %s, %s)
+    """, (
+        key,
+        machine,
+        expiry,
+        customer_name,
+        customer_mobile,
+        reseller_id
+    ))
 
     cur.execute("""
         INSERT INTO reseller_licenses (reseller_id, license_key, machine, expiry)
@@ -619,9 +631,13 @@ def all_keys():
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT key, machine, status, expiry, customer_name, customer_mobile, reseller_id
-        FROM licenses
-        ORDER BY id DESC
+        SELECT 
+            l.key, l.machine, l.status, l.expiry,
+            l.customer_name, l.customer_mobile,
+            r.name
+        FROM licenses l
+        LEFT JOIN resellers r ON l.reseller_id = r.id
+        ORDER BY l.id DESC
     """)
 
     rows = cur.fetchall()
@@ -637,7 +653,7 @@ def all_keys():
             "expiry": r[3],
             "customer_name": r[4],
             "customer_mobile": r[5],
-            "reseller_id": r[6]
+            "reseller": r[6]
         })
 
     return jsonify(data)

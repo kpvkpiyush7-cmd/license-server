@@ -61,6 +61,59 @@ def init_db():
     )
     """)
 
+    # ===== LICENSE EXTRA COLUMNS =====
+    try:
+        cur.execute("ALTER TABLE licenses ADD COLUMN customer_name TEXT")
+    except:
+        pass
+
+    try:
+        cur.execute("ALTER TABLE licenses ADD COLUMN customer_mobile TEXT")
+    except:
+        pass
+
+    try:
+        cur.execute("ALTER TABLE licenses ADD COLUMN reseller_id INTEGER")
+    except:
+        pass
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS resellers (
+        id SERIAL PRIMARY KEY,
+        name TEXT,
+        mobile TEXT UNIQUE,
+        password TEXT,
+        balance REAL DEFAULT 0,
+        status TEXT DEFAULT 'active'
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS reseller_licenses (
+        id SERIAL PRIMARY KEY,
+        reseller_id INTEGER,
+        license_key TEXT,
+        machine TEXT,
+        expiry TEXT
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS wallet_transactions (
+        id SERIAL PRIMARY KEY,
+        reseller_id INTEGER,
+        amount REAL,
+        type TEXT,
+        note TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+    """)
+
+    conn.commit()
+    conn.close()
+
+    
+
     # 🔥 ADD THIS BELOW
     cur.execute("""
     CREATE TABLE IF NOT EXISTS resellers (
@@ -373,10 +426,10 @@ def add_key():
     cur = conn.cursor()
 
     try:
-        cur.execute("""
-            INSERT INTO licenses (key, machine, expiry)
-            VALUES (%s, %s, %s)
-        """, (key, machine, expiry))
+            cur.execute("""
+                INSERT INTO licenses (key, machine, expiry, customer_name, customer_mobile, reseller_id)
+                VALUES (%s, %s, %s, %s, %s, %s)
+            """, (key, machine, expiry, customer_name, customer_mobile, reseller_id))
         conn.commit()
     except:
         pass
@@ -401,6 +454,8 @@ def reseller_generate():
     reseller_id = int(data["reseller_id"])   # 🔥 FIX
     machine = data["machine"].upper()
     months = int(data["months"])
+    customer_name = data.get("customer_name", "").strip()
+    customer_mobile = data.get("customer_mobile", "").strip()
 
     conn = get_conn()
     cur = conn.cursor()
@@ -526,10 +581,11 @@ def reseller_my_keys(rid):
     cur = conn.cursor()
 
     cur.execute("""
-        SELECT rl.license_key, l.expiry, l.status
+        SELECT rl.license_key, l.expiry, l.status, l.customer_name, l.customer_mobile, l.machine
         FROM reseller_licenses rl
         JOIN licenses l ON rl.license_key = l.key
         WHERE rl.reseller_id=%s
+        ORDER BY rl.id DESC
     """, (rid,))
 
     data = cur.fetchall()
@@ -540,7 +596,10 @@ def reseller_my_keys(rid):
         result.append({
             "key": r[0],
             "expiry": r[1],
-            "status": r[2]
+            "status": r[2],
+            "customer_name": r[3],
+            "customer_mobile": r[4],
+            "machine": r[5]
         })
 
     return jsonify(result)
@@ -551,10 +610,20 @@ def reseller_my_keys(rid):
 # =========================
 @app.route("/all_keys")
 def all_keys():
+
+    # 🔒 ADMIN SECURITY ADD HERE
+    if not admin_required():
+        return jsonify({"status":"unauthorized"}), 401
+
     conn = get_conn()
     cur = conn.cursor()
 
-    cur.execute("SELECT key, machine, status, expiry FROM licenses")
+    cur.execute("""
+        SELECT key, machine, status, expiry, customer_name, customer_mobile, reseller_id
+        FROM licenses
+        ORDER BY id DESC
+    """)
+
     rows = cur.fetchall()
 
     conn.close()
@@ -565,7 +634,10 @@ def all_keys():
             "key": r[0],
             "machine": r[1],
             "status": r[2],
-            "expiry": r[3]
+            "expiry": r[3],
+            "customer_name": r[4],
+            "customer_mobile": r[5],
+            "reseller_id": r[6]
         })
 
     return jsonify(data)

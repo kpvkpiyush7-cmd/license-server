@@ -121,11 +121,14 @@ except Exception as e:
     print("DB INIT ERROR:", e)
 
 
+import os
 from flask import send_file
 
 @app.route("/download")
 def download():
-    return send_file("ABS.exe", as_attachment=True)
+    return redirect("https://github.com/kpvkpiyush7-cmd/license-server/releases/download/v2.6.4/ABS.exe")
+
+
 
 
 @app.route("/logout")
@@ -256,7 +259,14 @@ def reseller_login():
         session["reseller"] = True
         session["reseller_id"] = row[0]
         session["reseller_name"] = row[1]
-        return jsonify({"status":"success","id":row[0],"name":row[1]})
+        return jsonify({
+            "status": "success",
+            "id": row[0],
+            "name": row[1]
+        })
+
+    # 🔥 VERY IMPORTANT (missing tha)
+    return jsonify({"status": "fail"})
 
 
 # =========================

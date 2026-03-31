@@ -2,9 +2,6 @@ from flask import Flask, request, jsonify, render_template, redirect, session
 import hashlib
 import os
 from datetime import datetime, timedelta
-from flask import Flask
-
-app = Flask(__name__, static_folder="static")
 
 # 🔥 NEW IMPORT (POSTGRESQL)
 import psycopg2
@@ -284,30 +281,22 @@ def home():
 # =========================
 # LOGIN (ADMIN)
 # =========================
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/secure-login-749874", methods=["GET","POST"])
 def login():
-
     if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
-
-        # ✅ ADMIN LOGIN SUCCESS
-        if username == "admin" and password == "1@amnsdbpoi":
+        if request.form.get("username") == "admin" and request.form.get("password") == "1@amnsdbpoi":
             session["admin"] = True
-            return redirect("/admin")   # 🔥 YAHI LIKHNA HAI
-
-        return render_template("login.html", error="Invalid Login")
-
+            return redirect("/secure-admin-749874")
     return render_template("login.html")
 
 
 # =========================
 # ADMIN DASHBOARD
 # =========================
-@app.route("/admin")
+@app.route("/secure-admin-749874")
 def dashboard():
     if not session.get("admin"):
-        return redirect("/login")
+        return redirect("/secure-login-749874")
     return render_template("dashboard.html")
 
 

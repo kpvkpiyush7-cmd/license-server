@@ -18,3 +18,10 @@ img {
 img:hover {
     transform: scale(1.05);
 }
+img {
+    transition: 0.3s;
+}
+
+img:hover {
+    transform: scale(1.05);
+}

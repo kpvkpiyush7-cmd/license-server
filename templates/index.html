@@ -46,11 +46,13 @@ function payNow(amount, plan){
             order_id: data.id,
 
             handler: function (response) {
-                let machine = prompt("Enter Machine ID");
+                let machine = prompt("Enter Machine ID")
+                let name = prompt("Enter Your Name")
+                let mobile = prompt("Enter Mobile Number")
 
-                if (!machine || machine.trim() === "") {
-                    alert("Machine ID required");
-                    return;
+                if (!machine || !name || !mobile) {
+                    alert("All fields required")
+                    return
                 }
 
                 fetch("/verify_payment", {
@@ -61,6 +63,8 @@ function payNow(amount, plan){
                         order_id: response.razorpay_order_id,
                         signature: response.razorpay_signature,
                         machine: machine,
+                        name: name,
+                        mobile: mobile,
                         plan: plan
                     })
                 })

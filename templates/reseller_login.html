@@ -61,12 +61,21 @@
 
 <script>
 function login(){
+
+    let mobile = document.getElementById("mobile").value.trim()
+    let password = document.getElementById("password").value.trim()
+
+    if(mobile === "" || password === ""){
+        alert("Enter all fields ❌")
+        return
+    }
+
     fetch("/reseller/login", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
-            mobile:document.getElementById("mobile").value,
-            password:document.getElementById("password").value
+            mobile: mobile,
+            password: password
         })
     })
     .then(res=>res.json())

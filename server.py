@@ -304,18 +304,55 @@ def reseller_login():
 
 
 # =========================
-# DASHBOARD (PROTECTED)
+# =========================
+# HOME (WEBSITE)
 # =========================
 @app.route("/")
+def home():
+    return render_template("index.html")
+
+
+# =========================
+# LOGIN (ADMIN)
+# =========================
+@app.route("/login", methods=["GET", "POST"])
+def login():
+
+    if request.method == "POST":
+        username = request.form.get("username")
+        password = request.form.get("password")
+
+        # ✅ ADMIN LOGIN SUCCESS
+        if username == "admin" and password == "1@amnsdbpoi":
+            session["admin"] = True
+            return redirect("/admin")   # 🔥 YAHI LIKHNA HAI
+
+        return render_template("login.html", error="Invalid Login")
+
+    return render_template("login.html")
+
+
+# =========================
+# ADMIN DASHBOARD
+# =========================
+@app.route("/admin")
 def dashboard():
     if not session.get("admin"):
         return redirect("/login")
     return render_template("dashboard.html")
 
+
+# =========================
+# RESELLER LOGIN PAGE
+# =========================
 @app.route("/reseller")
 def reseller_login_page():
     return render_template("reseller_login.html")
 
+
+# =========================
+# RESELLER DASHBOARD
+# =========================
 @app.route("/reseller/dashboard")
 def reseller_dashboard_page():
     if not session.get("reseller"):

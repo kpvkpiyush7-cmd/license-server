@@ -10,3 +10,11 @@ body {
 .card {
     border-radius: 15px;
 }
+
+img {
+    transition: 0.3s;
+}
+
+img:hover {
+    transform: scale(1.05);
+}

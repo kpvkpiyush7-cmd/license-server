@@ -2,6 +2,7 @@ from flask import Flask, request, jsonify, render_template, redirect, session
 import hashlib
 import os
 from datetime import datetime, timedelta
+import razorpay
 
 # 🔥 NEW IMPORT (POSTGRESQL)
 import psycopg2
@@ -11,6 +12,10 @@ app = Flask(__name__)
 app.secret_key = "SUPER_SECRET_ADMIN_123"
 
 SECRET = "GST_SECURE_2026_ULTRA"
+RAZORPAY_KEY_ID = os.environ.get("RAZORPAY_KEY_ID", "")
+RAZORPAY_KEY_SECRET = os.environ.get("RAZORPAY_KEY_SECRET", "")
+
+client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 
 def admin_required():
     if not session.get("admin"):
@@ -129,7 +134,93 @@ def download():
     return redirect("https://github.com/kpvkpiyush7-cmd/license-server/releases/download/2.7.0/ABS_Setup.exe")
 
 
+@app.route("/create_order", methods=["POST"])
+def create_order():
+    data = request.get_json() or {}
 
+    amount = int(data.get("amount", 999))
+    plan = data.get("plan", "yearly")
+
+    if amount <= 0:
+        return jsonify({"status": "fail", "msg": "Invalid amount"}), 400
+
+    order = client.order.create({
+        "amount": amount * 100,
+        "currency": "INR",
+        "payment_capture": 1,
+        "notes": {
+            "plan": plan
+        }
+    })
+
+    return jsonify({
+        "status": "success",
+        "id": order["id"],
+        "amount": order["amount"],
+        "plan": plan,
+        "key": RAZORPAY_KEY_ID
+    })
+@app.route("/verify_payment", methods=["POST"])
+def verify_payment():
+    data = request.get_json() or {}
+
+    payment_id = (data.get("payment_id") or "").strip()
+    order_id = (data.get("order_id") or "").strip()
+    signature = (data.get("signature") or "").strip()
+    machine = (data.get("machine") or "").strip().upper()
+    plan = (data.get("plan") or "").strip().lower()
+
+    if not payment_id or not order_id or not signature or not machine:
+        return jsonify({"status": "fail", "msg": "Missing payment details"}), 400
+
+    try:
+        client.utility.verify_payment_signature({
+            "razorpay_order_id": order_id,
+            "razorpay_payment_id": payment_id,
+            "razorpay_signature": signature
+        })
+    except Exception:
+        return jsonify({"status": "fail", "msg": "Payment signature invalid"}), 400
+
+    try:
+        payment = client.payment.fetch(payment_id)
+    except Exception:
+        return jsonify({"status": "fail", "msg": "Payment fetch failed"}), 400
+
+    if payment.get("status") != "captured":
+        return jsonify({"status": "fail", "msg": "Payment not captured"}), 400
+
+    if plan == "monthly":
+        expiry = (datetime.now() + timedelta(days=30)).strftime("%Y-%m-%d")
+    elif plan == "lifetime":
+        expiry = "2099-12-31"
+    else:
+        expiry = (datetime.now() + timedelta(days=365)).strftime("%Y-%m-%d")
+
+    raw = f"{machine}|{expiry}|{SECRET}"
+    key = expiry.replace("-", "")[:6] + "-" + hashlib.sha256(raw.encode()).hexdigest()[:16].upper()
+
+    conn = get_conn()
+    cur = conn.cursor()
+
+    # duplicate payment save na ho
+    cur.execute("SELECT key FROM licenses WHERE machine=%s AND expiry=%s", (machine, expiry))
+    existing = cur.fetchone()
+
+    if not existing:
+        cur.execute("""
+            INSERT INTO licenses (key, machine, expiry)
+            VALUES (%s, %s, %s)
+        """, (key, machine, expiry))
+        conn.commit()
+
+    conn.close()
+
+    return jsonify({
+        "status": "success",
+        "key": key,
+        "expiry": expiry
+    })
 
 @app.route("/logout")
 def logout():

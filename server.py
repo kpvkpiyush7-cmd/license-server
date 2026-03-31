@@ -27,7 +27,7 @@ def get_conn():
     if not db_url:
         raise Exception("DATABASE_URL NOT FOUND ❌")
 
-    from urllib.parse import urlparse
+    
     import psycopg2
 
     url = urlparse(db_url)
@@ -114,68 +114,24 @@ def init_db():
 
     
 
-    # 🔥 ADD THIS BELOW
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS resellers (
-        id SERIAL PRIMARY KEY,
-        name TEXT,
-        mobile TEXT UNIQUE,
-        password TEXT,
-        balance REAL DEFAULT 0,
-        status TEXT DEFAULT 'active'
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS reseller_licenses (
-        id SERIAL PRIMARY KEY,
-        reseller_id INTEGER,
-        license_key TEXT,
-        machine TEXT,
-        expiry TEXT
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS wallet_transactions (
-        id SERIAL PRIMARY KEY,
-        reseller_id INTEGER,
-        amount REAL,
-        type TEXT,
-        note TEXT,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    )
-    """)
-
-    conn.commit()
-    conn.close()
+    
 try:
     init_db()
 except Exception as e:
     print("DB INIT ERROR:", e)
-# =========================
-# LOGIN SYSTEM
-# =========================
-@app.route("/login", methods=["GET", "POST"])
-def login():
 
-    if request.method == "POST":
-        username = request.form.get("username")
-        password = request.form.get("password")
 
-        if username == "admin" and password == "1@amnsdbpoi":
-            session["admin"] = True
-            return redirect("/")
+from flask import send_file
 
-        return render_template("login.html", error="Invalid Login")
-
-    return render_template("login.html")
+@app.route("/download")
+def download():
+    return send_file("ABS.exe", as_attachment=True)
 
 
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect("/login")
+    return redirect("/")
 
 @app.route("/admin/add_reseller", methods=["POST"])
 def add_reseller():

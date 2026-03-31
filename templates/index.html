@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ABS Billing Software</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+<!-- NAVBAR -->
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+  <div class="container">
+    <a class="navbar-brand fw-bold">ABS Billing</a>
+
+    <div>
+      <a href="#pricing" class="btn btn-outline-light me-2">Pricing</a>
+      <a href="#download" class="btn btn-success me-2">Download</a>
+      <a href="/login" class="btn btn-warning">Login</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero text-center text-white d-flex align-items-center">
+  <div class="container">
+    <h1 class="display-4 fw-bold">Best Billing Software</h1>
+    <p class="lead">GST, POS, Invoice, Reports — All in One</p>
+
+    <a href="#download" class="btn btn-lg btn-success mt-3">Download Now</a>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="container py-5">
+  <h2 class="text-center mb-5">Features</h2>
+
+  <div class="row text-center">
+    <div class="col-md-4">
+      <h4>GST Billing</h4>
+      <p>Auto GST Calculation with Reports</p>
+    </div>
+
+    <div class="col-md-4">
+      <h4>POS System</h4>
+      <p>Fast billing for shops & retail</p>
+    </div>
+
+    <div class="col-md-4">
+      <h4>Reports</h4>
+      <p>Sales, Ledger, Profit Reports</p>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section id="pricing" class="bg-light py-5">
+  <div class="container">
+    <h2 class="text-center mb-5">Pricing</h2>
+
+    <div class="row text-center">
+
+      <div class="col-md-4">
+        <div class="card p-4 shadow">
+          <h3>Monthly</h3>
+          <h2>₹50</h2>
+          <p>1 Month Access</p>
+          <button class="btn btn-primary" onclick="buyPlan('month')">Buy Now</button>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card p-4 shadow">
+          <h3>Yearly</h3>
+          <h2>₹399</h2>
+          <p>1 Year Access</p>
+          <button class="btn btn-success" onclick="buyPlan('year')">Buy Now</button>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <div class="card p-4 shadow">
+          <h3>Lifetime</h3>
+          <h2>₹2499</h2>
+          <p>Lifetime Access</p>
+          <button class="btn btn-danger" onclick="buyPlan('life')">Buy Now</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- DOWNLOAD -->
+<section id="download" class="py-5 text-center">
+  <div class="container">
+    <h2>Download Software</h2>
+    <p>Latest Version Available</p>
+
+    <a href="/download" class="btn btn-lg btn-dark">
+      Download for Windows
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="bg-dark text-white text-center py-3">
+  <p>© 2026 ABS Billing Software</p>
+</footer>
+
+<script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>

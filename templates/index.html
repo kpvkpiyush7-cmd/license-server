@@ -14,8 +14,80 @@
     background: linear-gradient(135deg, #0d6efd, #198754);
 }
 </style>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 </head>
+
+<script>
+function payNow(amount, plan){
+
+    fetch("/create_order", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+            amount: amount,
+            plan: plan
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.status !== "success") {
+            alert("Order create failed");
+            return;
+        }
+
+        var options = {
+            key: data.key,
+            amount: data.amount,
+            currency: "INR",
+            name: "ABS Billing",
+            description: "Software Purchase",
+            order_id: data.id,
+
+            handler: function (response) {
+                let machine = prompt("Enter Machine ID");
+
+                if (!machine || machine.trim() === "") {
+                    alert("Machine ID required");
+                    return;
+                }
+
+                fetch("/verify_payment", {
+                    method: "POST",
+                    headers: {"Content-Type":"application/json"},
+                    body: JSON.stringify({
+                        payment_id: response.razorpay_payment_id,
+                        order_id: response.razorpay_order_id,
+                        signature: response.razorpay_signature,
+                        machine: machine,
+                        plan: plan
+                    })
+                })
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status === "success") {
+                        alert("Payment Success\n\nLicense Key: " + result.key + "\nExpiry: " + result.expiry);
+                    } else {
+                        alert(result.msg || "Verification failed");
+                    }
+                });
+            },
+
+            theme: {
+                color: "#198754"
+            }
+        };
+
+        var rzp = new Razorpay(options);
+        rzp.open();
+    })
+    .catch(() => {
+        alert("Payment start failed");
+    });
+}
+</script>
+
 
 <body>
 
@@ -142,10 +214,10 @@
 <div class="col-md-4">
 <div class="card p-4 shadow">
 <h3>Monthly</h3>
-<h2>₹99</h2>
+<h2>₹50</h2>
 <p>1 Month Access</p>
 
-<button class="btn btn-primary w-100" onclick="buyPlan('1 Month')">
+<button class="btn btn-primary w-100" onclick="payNow(50, 'monthly')">
 Buy Now
 </button>
 
@@ -162,7 +234,7 @@ Buy Now
 
 <p>1 Year Access</p>
 
-<button class="btn btn-success w-100" onclick="buyPlan('1 Year')">
+<button class="btn btn-success w-100" onclick="payNow(999, 'yearly')">
 Buy Now
 </button>
 
@@ -179,7 +251,7 @@ Buy Now
 
 <p>Lifetime Access</p>
 
-<button class="btn btn-danger w-100" onclick="buyPlan('Lifetime')">
+<button class="btn btn-danger w-100" onclick="payNow(4999, 'lifetime')">
 Buy Now
 </button>
 

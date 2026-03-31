@@ -1,4 +1,5 @@
 flask
+razorpay
 gunicorn
 requests
 psycopg2-binary

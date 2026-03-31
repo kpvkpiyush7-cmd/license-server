@@ -112,34 +112,47 @@
 <!-- PRICING -->
 <section id="pricing" class="bg-light py-5">
   <div class="container">
-    <h2 class="text-center mb-5">Pricing</h2>
+    <h2 class="text-center mb-3">Pricing</h2>
+
+    <p class="text-center text-danger fw-bold">
+      ⏳ Offer Ends In: <span id="timer">00:00:00</span>
+    </p>
 
     <div class="row text-center">
 
+      <!-- MONTH -->
       <div class="col-md-4">
         <div class="card p-4 shadow">
           <h3>Monthly</h3>
           <h2>₹50</h2>
           <p>1 Month Access</p>
-          <button class="btn btn-primary" onclick="buyPlan('month')">Buy Now</button>
+          <button class="btn btn-primary">Buy Now</button>
         </div>
       </div>
 
+      <!-- YEAR -->
       <div class="col-md-4">
-        <div class="card p-4 shadow">
-          <h3>Yearly</h3>
-          <h2>₹999</h2>
+        <div class="card p-4 shadow border border-danger">
+          <h3>Yearly 🔥</h3>
+
+          <h5 style="text-decoration:line-through; color:red;">₹1999</h5>
+          <h2 style="color:green;">₹999</h2>
+
           <p>1 Year Access</p>
-          <button class="btn btn-success" onclick="buyPlan('year')">Buy Now</button>
+          <button class="btn btn-success">Buy Now</button>
         </div>
       </div>
 
+      <!-- LIFETIME -->
       <div class="col-md-4">
-        <div class="card p-4 shadow">
-          <h3>Lifetime</h3>
-          <h2>₹4999</h2>
+        <div class="card p-4 shadow border border-danger">
+          <h3>Lifetime 🔥</h3>
+
+          <h5 style="text-decoration:line-through; color:red;">₹9999</h5>
+          <h2 style="color:green;">₹4999</h2>
+
           <p>Lifetime Access</p>
-          <button class="btn btn-danger" onclick="buyPlan('life')">Buy Now</button>
+          <button class="btn btn-danger">Buy Now</button>
         </div>
       </div>
 

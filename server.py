@@ -2,6 +2,9 @@ from flask import Flask, request, jsonify, render_template, redirect, session
 import hashlib
 import os
 from datetime import datetime, timedelta
+from flask import Flask
+
+app = Flask(__name__, static_folder="static")
 
 # 🔥 NEW IMPORT (POSTGRESQL)
 import psycopg2

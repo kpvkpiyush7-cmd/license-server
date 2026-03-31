@@ -169,6 +169,8 @@ def verify_payment():
     signature = (data.get("signature") or "").strip()
     machine = (data.get("machine") or "").strip().upper()
     plan = (data.get("plan") or "").strip().lower()
+    name = (data.get("name") or "").strip()
+    mobile = (data.get("mobile") or "").strip()
 
     if not payment_id or not order_id or not signature or not machine:
         return jsonify({"status": "fail", "msg": "Missing payment details"}), 400
@@ -209,9 +211,10 @@ def verify_payment():
 
     if not existing:
         cur.execute("""
-            INSERT INTO licenses (key, machine, expiry)
-            VALUES (%s, %s, %s)
-        """, (key, machine, expiry))
+            INSERT INTO licenses 
+            (key, machine, expiry, customer_name, customer_mobile)
+            VALUES (%s, %s, %s, %s, %s)
+        """, (key, machine, expiry, name, mobile))
         conn.commit()
 
     conn.close()

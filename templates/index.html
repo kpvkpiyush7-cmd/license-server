@@ -9,75 +9,96 @@
 <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
 <style>
-
-/* ===== HERO ===== */
 .hero {
     height: 90vh;
     background: linear-gradient(135deg, #0d6efd, #198754);
-    position: relative;
-    overflow: hidden;
 }
-
-/* floating effect */
-.hero::after{
-    content:'';
-    position:absolute;
-    width:300px;
-    height:300px;
-    background:rgba(255,255,255,0.1);
-    border-radius:50%;
-    top:20%;
-    left:10%;
-}
-
-/* ===== CARD HOVER ===== */
-.card{
-    transition:0.3s;
-}
-.card:hover{
-    transform: translateY(-10px);
-    box-shadow:0 20px 30px rgba(0,0,0,0.2);
-}
-
-/* ===== BUTTON ROUND ===== */
-.btn{
-    border-radius:30px;
-}
-
-/* ===== LOADER ===== */
-#loader{
-    position:fixed;
-    width:100%;
-    height:100%;
-    background:#000;
-    z-index:9999;
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    color:#fff;
-    font-size:20px;
-}
-
 </style>
-
 <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 
 </head>
 
-<body>
+<script>
+function payNow(amount, plan){
 
-<!-- LOADER -->
-<div id="loader">Loading ABS...</div>
+    fetch("/create_order", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+            amount: amount,
+            plan: plan
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (data.status !== "success") {
+            alert("Order create failed");
+            return;
+        }
+
+        var options = {
+            key: data.key,
+            amount: data.amount,
+            currency: "INR",
+            name: "ABS Billing",
+            description: "Software Purchase",
+            order_id: data.id,
+
+            handler: function (response) {
+                let machine = prompt("Enter Machine ID")
+                let name = prompt("Enter Your Name")
+                let mobile = prompt("Enter Mobile Number")
+
+                if (!machine || !name || !mobile) {
+                    alert("All fields required")
+                    return
+                }
+
+                fetch("/verify_payment", {
+                    method: "POST",
+                    headers: {"Content-Type":"application/json"},
+                    body: JSON.stringify({
+                        payment_id: response.razorpay_payment_id,
+                        order_id: response.razorpay_order_id,
+                        signature: response.razorpay_signature,
+                        machine: machine,
+                        name: name,
+                        mobile: mobile,
+                        plan: plan
+                    })
+                })
+                .then(res => res.json())
+                .then(result => {
+                    if (result.status === "success") {
+                        alert("Payment Success\n\nLicense Key: " + result.key + "\nExpiry: " + result.expiry);
+                    } else {
+                        alert(result.msg || "Verification failed");
+                    }
+                });
+            },
+
+            theme: {
+                color: "#198754"
+            }
+        };
+
+        var rzp = new Razorpay(options);
+        rzp.open();
+    })
+    .catch(() => {
+        alert("Payment start failed");
+    });
+}
+</script>
+
+
+<body>
 
 <!-- NAVBAR -->
 <nav class="navbar navbar-dark bg-dark">
   <div class="container">
-
-    <!-- ICON ADDED -->
-    <a href="/" class="navbar-brand fw-bold d-flex align-items-center">
-        <img src="{{ url_for('static', filename='icon.ico') }}" width="28" class="me-2">
-        ABS Software
-    </a>
+    <a href="/" class="navbar-brand fw-bold">ABS Software</a>
 
     <div>
       <a href="#pricing" class="btn btn-outline-light me-2">Pricing</a>
@@ -140,6 +161,14 @@
 <img src="{{ url_for('static', filename='img/sale.png') }}" class="img-fluid rounded shadow">
 <p>Sales Entry</p>
 </div>
+<div class="col-md-4">
+<img src="{{ url_for('static', filename='img/thermal.png') }}" class="img-fluid rounded shadow">
+<p>Thermal Print Bill</p>
+</div>
+<div class="col-md-4">
+<img src="{{ url_for('static', filename='img/a4.png') }}" class="img-fluid rounded shadow">
+<p>A4 Bill</p>
+</div>
 
 </div>
 </section>
@@ -162,7 +191,22 @@
 
 <div class="col-md-4">
 <h4>Advance Ledger</h4>
-<p>Tally Style Accounts</p>
+<p>Tally Style Accounts, Client Overduy By Days</p>
+</div>
+
+<div class="col-md-4">
+<h4>Hotel Mode</h4>
+<p>Room Booking + Billing</p>
+</div>
+
+<div class="col-md-4">
+<h4>Reports</h4>
+<p>GST, Profit, Sales Reports, Purchase Reports, Quick Purchase Mode</p>
+</div>
+
+<div class="col-md-4">
+<h4>Secure License</h4>
+<p>Online Activation, Secured Database</p>
 </div>
 
 </div>
@@ -173,7 +217,7 @@
 <h2>Pricing</h2>
 
 <p class="text-danger fw-bold">
-⏳ Offer Ends In: <span id="timer"></span>
+⏳ Offer Ends In: <span id="timer">00:00:00</span>
 </p>
 
 <div class="row mt-4">
@@ -183,23 +227,26 @@
 <div class="card p-4 shadow">
 <h3>Monthly</h3>
 <h2>₹50</h2>
-<button class="btn btn-primary w-100" onclick="payNow(50,'monthly')">
+<p>1 Month Access</p>
+
+<button class="btn btn-primary w-100" onclick="payNow(50, 'monthly')">
 Buy Now
 </button>
+
 </div>
 </div>
 
 <!-- YEAR -->
 <div class="col-md-4">
-<div class="card p-4 shadow position-relative border border-danger">
-
-<span style="position:absolute;top:-10px;right:-10px;background:red;color:#fff;padding:5px 10px;border-radius:20px;font-size:12px;">🔥 Offer</span>
-
+<div class="card p-4 shadow border border-danger">
 <h3>Yearly 🔥</h3>
+
 <h5 style="text-decoration:line-through;color:red;">₹1999</h5>
 <h2 style="color:green;">₹999</h2>
 
-<button class="btn btn-success w-100" onclick="payNow(999,'yearly')">
+<p>1 Year Access</p>
+
+<button class="btn btn-success w-100" onclick="payNow(999, 'yearly')">
 Buy Now
 </button>
 
@@ -208,15 +255,15 @@ Buy Now
 
 <!-- LIFETIME -->
 <div class="col-md-4">
-<div class="card p-4 shadow position-relative border border-danger">
-
-<span style="position:absolute;top:-10px;right:-10px;background:red;color:#fff;padding:5px 10px;border-radius:20px;font-size:12px;">🔥 Best</span>
-
+<div class="card p-4 shadow border border-danger">
 <h3>Lifetime 🔥</h3>
+
 <h5 style="text-decoration:line-through;color:red;">₹9999</h5>
 <h2 style="color:green;">₹4999</h2>
 
-<button class="btn btn-danger w-100" onclick="payNow(4999,'lifetime')">
+<p>Lifetime Access</p>
+
+<button class="btn btn-danger w-100" onclick="payNow(4999, 'lifetime')">
 Buy Now
 </button>
 
@@ -229,6 +276,8 @@ Buy Now
 <!-- DOWNLOAD -->
 <section id="download" class="py-5 text-center">
 <h2>Download Software</h2>
+<p>Latest Version Available</p>
+
 <a href="/download" class="btn btn-lg btn-dark">
 Download for Windows
 </a>
@@ -239,83 +288,16 @@ Download for Windows
 <h4>Contact Us</h4>
 <p>📞 +91 9771902089</p>
 <p>📧 Support@absbilling.online</p>
+<p>Address:- At Bagodar Bus Stand, Piyush Computer, Giridih-825322 Jh</p>
 </section>
 
+<!-- FOOTER -->
 <footer class="text-center py-3">
 <p>© ABS Billing Software</p>
+<p>Easy to use</p>
 </footer>
 
-<!-- PAYMENT SCRIPT (UNCHANGED SAFE) -->
-<script>
-function payNow(amount, plan){
-
-    fetch("/create_order", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({amount,plan})
-    })
-    .then(res => res.json())
-    .then(data => {
-
-        var options = {
-            key: data.key,
-            amount: data.amount,
-            currency: "INR",
-            name: "ABS Billing",
-            order_id: data.id,
-
-            handler: function (response) {
-                let machine = prompt("Enter Machine ID")
-                let name = prompt("Enter Your Name")
-                let mobile = prompt("Enter Mobile Number")
-
-                fetch("/verify_payment", {
-                    method: "POST",
-                    headers: {"Content-Type":"application/json"},
-                    body: JSON.stringify({
-                        payment_id: response.razorpay_payment_id,
-                        order_id: response.razorpay_order_id,
-                        signature: response.razorpay_signature,
-                        machine,name,mobile,plan
-                    })
-                })
-                .then(res => res.json())
-                .then(result => {
-                    alert("License Key: " + result.key)
-                });
-            }
-        };
-
-        new Razorpay(options).open();
-    });
-}
-</script>
-
-<!-- TIMER -->
-<script>
-function updateTimer(){
-    let now = new Date().getTime()
-    let end = new Date()
-    end.setHours(23,59,59)
-
-    let diff = end - now
-
-    let h = Math.floor(diff/(1000*60*60))
-    let m = Math.floor((diff%(1000*60*60))/(1000*60))
-    let s = Math.floor((diff%(1000*60))/1000)
-
-    document.getElementById("timer").innerText =
-        h + "h " + m + "m " + s + "s"
-}
-setInterval(updateTimer,1000)
-</script>
-
-<!-- LOADER -->
-<script>
-window.onload = function(){
-    document.getElementById("loader").style.display="none"
-}
-</script>
+<script src="{{ url_for('static', filename='script.js') }}"></script>
 
 </body>
 </html>

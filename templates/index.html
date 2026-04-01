@@ -6,82 +6,56 @@
 <title>ABS Billing Software</title>
 
 <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 
 <style>
 
-/* ===== GLOBAL ===== */
-body{
-    font-family: 'Segoe UI', sans-serif;
-    scroll-behavior: smooth;
-}
-
-.navbar{
-    backdrop-filter: blur(10px);
-}
-
 /* ===== HERO ===== */
-.hero{
-    height: 100vh;
-    background: linear-gradient(135deg,#0d6efd,#198754);
-    display:flex;
-    align-items:center;
+.hero {
+    height: 90vh;
+    background: linear-gradient(135deg, #0d6efd, #198754);
+    position: relative;
+    overflow: hidden;
 }
 
-.hero h1{
-    font-size: 3rem;
+/* floating effect */
+.hero::after{
+    content:'';
+    position:absolute;
+    width:300px;
+    height:300px;
+    background:rgba(255,255,255,0.1);
+    border-radius:50%;
+    top:20%;
+    left:10%;
 }
 
-/* ===== CARD ANIMATION ===== */
+/* ===== CARD HOVER ===== */
 .card{
     transition:0.3s;
-    border-radius:15px;
 }
 .card:hover{
     transform: translateY(-10px);
-    box-shadow:0 20px 40px rgba(0,0,0,0.2);
+    box-shadow:0 20px 30px rgba(0,0,0,0.2);
 }
 
-/* ===== BUTTON ===== */
+/* ===== BUTTON ROUND ===== */
 .btn{
     border-radius:30px;
 }
 
-/* ===== PRICING GLOW ===== */
-.pricing-card{
-    transition:0.3s;
-}
-.pricing-card:hover{
-    transform: scale(1.05);
-}
-
-/* ===== BADGE ===== */
-.badge-offer{
-    position:absolute;
-    top:-10px;
-    right:-10px;
-    background:red;
-    color:#fff;
-    padding:5px 10px;
-    border-radius:50px;
-    font-size:12px;
-}
-
-/* ===== TESTIMONIAL ===== */
-.testimonial{
-    background:#f8f9fa;
-    border-radius:15px;
-    padding:20px;
-}
-
-/* ===== FAQ ===== */
-.accordion-button{
-    font-weight:bold;
-}
-
-/* ===== FOOTER ===== */
-footer{
+/* ===== LOADER ===== */
+#loader{
+    position:fixed;
+    width:100%;
+    height:100%;
     background:#000;
+    z-index:9999;
+    display:flex;
+    justify-content:center;
+    align-items:center;
     color:#fff;
+    font-size:20px;
 }
 
 </style>
@@ -92,66 +66,103 @@ footer{
 
 <body>
 
+<!-- LOADER -->
+<div id="loader">Loading ABS...</div>
+
 <!-- NAVBAR -->
-<nav class="navbar navbar-dark bg-dark fixed-top">
-<div class="container">
+<nav class="navbar navbar-dark bg-dark">
+  <div class="container">
 
-<a href="/" class="navbar-brand d-flex align-items-center">
-<img src="/static/icon.ico" width="30" class="me-2">
-<strong>ABS Software</strong>
-</a>
+    <!-- ICON ADDED -->
+    <a href="/" class="navbar-brand fw-bold d-flex align-items-center">
+        <img src="{{ url_for('static', filename='icon.ico') }}" width="28" class="me-2">
+        ABS Software
+    </a>
 
-<div>
-<a href="#pricing" class="btn btn-outline-light me-2">Pricing</a>
-<a href="#download" class="btn btn-success me-2">Download</a>
-<a href="/reseller" class="btn btn-warning">Reseller</a>
-</div>
-
-</div>
+    <div>
+      <a href="#pricing" class="btn btn-outline-light me-2">Pricing</a>
+      <a href="#download" class="btn btn-success me-2">Download</a>
+      <a href="/reseller" class="btn btn-warning">Reseller Login</a>
+    </div>
+  </div>
 </nav>
 
 <!-- HERO -->
-<section class="hero text-white text-center">
-<div class="container">
+<section class="hero text-center text-white d-flex align-items-center">
+  <div class="container">
+    <h1 class="display-4 fw-bold">ABS Billing Software</h1>
+    <p class="lead">
+      GST Billing • POS • Invoice • Ledger • Hotel Mode
+    </p>
 
-<h1 class="fw-bold">ABS Billing Software</h1>
+    <p>
+      ✔ Fast Billing System  
+      ✔ Secure License System  
+      ✔ Made for Indian Business
+    </p>
 
-<p class="lead">
-GST Billing • POS • Invoice • Ledger • Hotel Mode
-</p>
+    <a href="#download" class="btn btn-lg btn-light mt-3">Download Now</a>
+  </div>
+</section>
 
-<a href="#download" class="btn btn-light btn-lg mt-3">
-Download Now
-</a>
+<!-- SOFTWARE PREVIEW -->
+<section class="container py-5 text-center">
+<h2 class="mb-4">Software Preview</h2>
+
+<div class="row g-4">
+
+<div class="col-md-4">
+<img src="{{ url_for('static', filename='img/dashboard.png') }}" class="img-fluid rounded shadow">
+<p>Dashboard</p>
+</div>
+
+<div class="col-md-4">
+<img src="{{ url_for('static', filename='img/engine.png') }}" class="img-fluid rounded shadow">
+<p>Engine</p>
+</div>
+
+<div class="col-md-4">
+<img src="{{ url_for('static', filename='img/hotel.png') }}" class="img-fluid rounded shadow">
+<p>Hotel Mode</p>
+</div>
+
+<div class="col-md-4">
+<img src="{{ url_for('static', filename='img/ledger.png') }}" class="img-fluid rounded shadow">
+<p>Ledger</p>
+</div>
+
+<div class="col-md-4">
+<img src="{{ url_for('static', filename='img/pos.png') }}" class="img-fluid rounded shadow">
+<p>POS Billing</p>
+</div>
+
+<div class="col-md-4">
+<img src="{{ url_for('static', filename='img/sale.png') }}" class="img-fluid rounded shadow">
+<p>Sales Entry</p>
+</div>
 
 </div>
 </section>
 
 <!-- FEATURES -->
 <section class="container py-5 text-center">
-<h2>Powerful Features</h2>
+<h2>Features</h2>
 
 <div class="row mt-4">
 
 <div class="col-md-4">
-<div class="card p-4">
 <h4>GST Billing</h4>
-<p>Auto calculation + invoice PDF</p>
-</div>
-</div>
-
-<div class="col-md-4">
-<div class="card p-4">
-<h4>POS</h4>
-<p>Fast billing system</p>
-</div>
+<p>Auto GST + Invoice PDF + Thermal Print</p>
 </div>
 
 <div class="col-md-4">
-<div class="card p-4">
-<h4>Ledger</h4>
-<p>Tally style accounting</p>
+<h4>POS System</h4>
+<p>Fast Retail Billing</p>
 </div>
+
+<div class="col-md-4">
+<h4>Advance Ledger</h4>
+<p>Tally Style Accounts</p>
 </div>
 
 </div>
@@ -159,7 +170,6 @@ Download Now
 
 <!-- PRICING -->
 <section id="pricing" class="bg-light py-5 text-center">
-
 <h2>Pricing</h2>
 
 <p class="text-danger fw-bold">
@@ -168,137 +178,120 @@ Download Now
 
 <div class="row mt-4">
 
+<!-- MONTH -->
 <div class="col-md-4">
-<div class="card pricing-card p-4">
+<div class="card p-4 shadow">
 <h3>Monthly</h3>
 <h2>₹50</h2>
-
 <button class="btn btn-primary w-100" onclick="payNow(50,'monthly')">
-Buy
+Buy Now
 </button>
-
 </div>
 </div>
 
+<!-- YEAR -->
 <div class="col-md-4">
-<div class="card pricing-card p-4 position-relative border border-danger">
+<div class="card p-4 shadow position-relative border border-danger">
 
-<span class="badge-offer">HOT</span>
+<span style="position:absolute;top:-10px;right:-10px;background:red;color:#fff;padding:5px 10px;border-radius:20px;font-size:12px;">🔥 Offer</span>
 
-<h3>Yearly</h3>
-
+<h3>Yearly 🔥</h3>
 <h5 style="text-decoration:line-through;color:red;">₹1999</h5>
 <h2 style="color:green;">₹999</h2>
 
 <button class="btn btn-success w-100" onclick="payNow(999,'yearly')">
-Buy
+Buy Now
 </button>
 
 </div>
 </div>
 
+<!-- LIFETIME -->
 <div class="col-md-4">
-<div class="card pricing-card p-4 position-relative border border-danger">
+<div class="card p-4 shadow position-relative border border-danger">
 
-<span class="badge-offer">BEST</span>
+<span style="position:absolute;top:-10px;right:-10px;background:red;color:#fff;padding:5px 10px;border-radius:20px;font-size:12px;">🔥 Best</span>
 
-<h3>Lifetime</h3>
-
+<h3>Lifetime 🔥</h3>
 <h5 style="text-decoration:line-through;color:red;">₹9999</h5>
 <h2 style="color:green;">₹4999</h2>
 
 <button class="btn btn-danger w-100" onclick="payNow(4999,'lifetime')">
-Buy
+Buy Now
 </button>
 
 </div>
 </div>
 
 </div>
-</section>
-
-<!-- TESTIMONIAL -->
-<section class="container py-5 text-center">
-<h2>Customers Love Us ❤️</h2>
-
-<div class="row mt-4">
-
-<div class="col-md-4">
-<div class="testimonial">
-<p>Best billing software ever</p>
-<strong>- Shop Owner</strong>
-</div>
-</div>
-
-<div class="col-md-4">
-<div class="testimonial">
-<p>Very fast and easy</p>
-<strong>- Retailer</strong>
-</div>
-</div>
-
-<div class="col-md-4">
-<div class="testimonial">
-<p>Perfect for GST billing</p>
-<strong>- Business Owner</strong>
-</div>
-</div>
-
-</div>
-</section>
-
-<!-- FAQ -->
-<section class="container py-5">
-
-<h2 class="text-center">FAQ</h2>
-
-<div class="accordion mt-4">
-
-<div class="accordion-item">
-<h2 class="accordion-header">
-<button class="accordion-button" data-bs-toggle="collapse" data-bs-target="#faq1">
-How activation works?
-</button>
-</h2>
-<div id="faq1" class="accordion-collapse collapse show">
-<div class="accordion-body">
-After payment license key generated
-</div>
-</div>
-</div>
-
-<div class="accordion-item">
-<h2 class="accordion-header">
-<button class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#faq2">
-Is it secure?
-</button>
-</h2>
-<div id="faq2" class="accordion-collapse collapse">
-<div class="accordion-body">
-Yes fully secure system
-</div>
-</div>
-</div>
-
-</div>
-
 </section>
 
 <!-- DOWNLOAD -->
-<section id="download" class="text-center py-5">
+<section id="download" class="py-5 text-center">
 <h2>Download Software</h2>
-
-<a href="/download" class="btn btn-dark btn-lg">
-Download Windows
+<a href="/download" class="btn btn-lg btn-dark">
+Download for Windows
 </a>
 </section>
 
-<!-- FOOTER -->
+<!-- CONTACT -->
+<section class="bg-dark text-white text-center py-4">
+<h4>Contact Us</h4>
+<p>📞 +91 9771902089</p>
+<p>📧 Support@absbilling.online</p>
+</section>
+
 <footer class="text-center py-3">
 <p>© ABS Billing Software</p>
 </footer>
 
-<!-- TIMER SCRIPT -->
+<!-- PAYMENT SCRIPT (UNCHANGED SAFE) -->
+<script>
+function payNow(amount, plan){
+
+    fetch("/create_order", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({amount,plan})
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        var options = {
+            key: data.key,
+            amount: data.amount,
+            currency: "INR",
+            name: "ABS Billing",
+            order_id: data.id,
+
+            handler: function (response) {
+                let machine = prompt("Enter Machine ID")
+                let name = prompt("Enter Your Name")
+                let mobile = prompt("Enter Mobile Number")
+
+                fetch("/verify_payment", {
+                    method: "POST",
+                    headers: {"Content-Type":"application/json"},
+                    body: JSON.stringify({
+                        payment_id: response.razorpay_payment_id,
+                        order_id: response.razorpay_order_id,
+                        signature: response.razorpay_signature,
+                        machine,name,mobile,plan
+                    })
+                })
+                .then(res => res.json())
+                .then(result => {
+                    alert("License Key: " + result.key)
+                });
+            }
+        };
+
+        new Razorpay(options).open();
+    });
+}
+</script>
+
+<!-- TIMER -->
 <script>
 function updateTimer(){
     let now = new Date().getTime()
@@ -314,8 +307,14 @@ function updateTimer(){
     document.getElementById("timer").innerText =
         h + "h " + m + "m " + s + "s"
 }
-
 setInterval(updateTimer,1000)
+</script>
+
+<!-- LOADER -->
+<script>
+window.onload = function(){
+    document.getElementById("loader").style.display="none"
+}
 </script>
 
 </body>

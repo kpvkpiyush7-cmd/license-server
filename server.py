@@ -131,7 +131,7 @@ from flask import send_file
 
 @app.route("/download")
 def download():
-    return redirect("https://github.com/kpvkpiyush7-cmd/license-server/releases/download/2.7.0/ABS_Setup.exe")
+    return redirect("https://github.com/kpvkpiyush7-cmd/license-server/releases/download/v2.7.1/ABS_Setup.exe")
 
 
 @app.route("/create_order", methods=["POST"])
@@ -795,7 +795,7 @@ def activate_key():
 def version():
     return jsonify({
         "version": "2.7.0",
-        "url": "https://github.com/kpvkpiyush7-cmd/license-server/releases/download/2.7.0/update.zip"
+        "url": "https://github.com/kpvkpiyush7-cmd/license-server/releases/download/v2.7.1/update.zip"
     })
 
 

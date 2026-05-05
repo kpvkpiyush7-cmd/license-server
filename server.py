@@ -794,8 +794,8 @@ def activate_key():
 @app.route("/version", methods=["GET"])
 def version():
     return jsonify({
-        "version": "2.7.7",
-        "url": "https://github.com/kpvkpiyush7-cmd/license-server/releases/download/v2.7.7/update.zip"
+        "version": "2.7.8",
+        "url": "https://github.com/kpvkpiyush7-cmd/license-server/releases/download/v2.7.8/update.zip"
     })
 
 
